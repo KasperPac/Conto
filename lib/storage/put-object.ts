@@ -16,6 +16,7 @@ export async function putObject(args: Args): Promise<{ key: string }> {
     Bucket: R2_BUCKET,
     Key: key,
     Body: args.body,
+    ContentLength: args.body.byteLength,
     ContentType: args.contentType,
   }));
   return { key };
