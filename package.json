@@ -15,7 +15,8 @@
     "worker:dev": "tsx watch lib/jobs/worker.ts",
     "worker:start": "node --import tsx lib/jobs/worker.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",
@@ -37,6 +38,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^20.17.57",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.1.6",

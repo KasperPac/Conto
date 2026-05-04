@@ -1,0 +1,5 @@
+<svg viewBox="0 0 460 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Conto">
+  <path d="M 108 40 A 50 50 0 1 0 108 90" fill="none" stroke="#10B981" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="65" cy="65" r="16" fill="#10B981"/>
+  <text x="150" y="110" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif" font-weight="900" font-size="100" letter-spacing="-3" fill="#141413">Conto</text>
+</svg>
