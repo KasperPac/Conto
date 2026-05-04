@@ -15,7 +15,7 @@ export const users = pgTable('users', {
   image: text('image'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  cashflowBufferCents: bigint('cashflow_buffer_cents', { mode: 'bigint' }).notNull().default(50000),
+  cashflowBufferCents: bigint('cashflow_buffer_cents', { mode: 'bigint' }).notNull().default(BigInt(50000)),
 });
 
 export const sessions = pgTable('session', {
@@ -174,9 +174,9 @@ export const payslips = pgTable('payslips', {
   grossCents: bigint('gross_cents', { mode: 'bigint' }).notNull(),
   taxWithheldCents: bigint('tax_withheld_cents', { mode: 'bigint' }).notNull(),
   superCents: bigint('super_cents', { mode: 'bigint' }).notNull(),
-  salarySacrificeCents: bigint('salary_sacrifice_cents', { mode: 'bigint' }).notNull().default(0),
-  preTaxDeductionsCents: bigint('pre_tax_deductions_cents', { mode: 'bigint' }).notNull().default(0),
-  postTaxDeductionsCents: bigint('post_tax_deductions_cents', { mode: 'bigint' }).notNull().default(0),
+  salarySacrificeCents: bigint('salary_sacrifice_cents', { mode: 'bigint' }).notNull().default(BigInt(0)),
+  preTaxDeductionsCents: bigint('pre_tax_deductions_cents', { mode: 'bigint' }).notNull().default(BigInt(0)),
+  postTaxDeductionsCents: bigint('post_tax_deductions_cents', { mode: 'bigint' }).notNull().default(BigInt(0)),
   netCents: bigint('net_cents', { mode: 'bigint' }).notNull(),
   sourceObjectKey: text('source_object_key'),
   source: text('source').notNull(),
@@ -216,7 +216,7 @@ export const goals = pgTable('goals', {
   name: text('name').notNull(),
   targetAmountCents: bigint('target_amount_cents', { mode: 'bigint' }).notNull(),
   targetDate: date('target_date'),
-  currentAmountCents: bigint('current_amount_cents', { mode: 'bigint' }).notNull().default(0),
+  currentAmountCents: bigint('current_amount_cents', { mode: 'bigint' }).notNull().default(BigInt(0)),
   linkedAccountId: uuid('linked_account_id').references(() => accounts.id),
   status: text('status').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
