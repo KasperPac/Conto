@@ -11,7 +11,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx lib/db/seeds/index.ts",
-    "db:reset": "tsx scripts/db-reset.ts"
+    "db:reset": "tsx scripts/db-reset.ts",
+    "worker:dev": "tsx watch lib/jobs/worker.ts",
+    "worker:start": "node --import tsx lib/jobs/worker.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",
@@ -25,6 +27,7 @@
     "lucide-react": "^0.511.0",
     "next": "^15.3.0",
     "pg": "^8.20.0",
+    "pg-boss": "^12.18.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.3",
