@@ -263,5 +263,7 @@ export const expectedEvents = pgTable('expected_events', {
   generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
   userNote: text('user_note'),
 }, (t) => ({
+  // drizzle-kit doesn't support partial indexes — the WHERE clause is added manually in the migration.
+  // If you re-run db:generate, re-apply the manual patch in the migration SQL.
   pendingByDateIdx: index('expected_events_pending_idx').on(t.userId, t.expectedDate),
 }));
