@@ -1,18 +1,18 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import path from 'node:path';
 
 export default defineConfig({
   test: {
-    globals: true,
+    globals: false,
     environment: 'node',
-    env: {
-      // dotenv loaded via setupFiles; this ensures env vars are available at import time
-    },
-    setupFiles: ['dotenv/config'],
+    setupFiles: ['./tests/setup.ts'],
+    pool: 'forks',
+    singleFork: true,
+    include: ['tests/**/*.test.ts'],
+    exclude: ['tests/e2e/**', 'node_modules/**'],
+    testTimeout: 15000,
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
-    },
+    alias: { '@': path.resolve(__dirname, '.') },
   },
 });
