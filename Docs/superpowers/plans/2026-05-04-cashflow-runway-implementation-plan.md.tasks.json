@@ -1,0 +1,124 @@
+{
+  "planPath": "Docs/superpowers/plans/2026-05-04-cashflow-runway-implementation-plan.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 1: Drizzle schema + migration for cashflow tables",
+      "status": "pending",
+      "description": "**Goal:** Add recurrence_groups, pay_cadences, expected_events + alters on categories/transactions/users/payslips per spec §3.\n\n**Files:**\n- Modify: `lib/db/schema.ts`\n- Create: `lib/db/migrations/<NNNN>_cashflow_runway.sql`\n- Test: `tests/unit/db/schema.test.ts`\n\n**Verify:** `npm run db:generate -- --check` exits 0; `npm test -- tests/unit/db/schema.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/db/schema.ts\",\"lib/db/migrations/\",\"tests/unit/db/schema.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/db/schema.test.ts\",\"acceptanceCriteria\":[\"new tables export from schema.ts\",\"alters present on existing tables\",\"npm run db:generate produces single migration\",\"npm run db:migrate applies cleanly\",\"partial index expected_events_pending_idx exists\",\"RLS policies on all three new tables\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 2: Branded TypeScript types for cashflow entities",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** Branded ID types and shared interfaces so domain functions compose cleanly.\n\n**Files:**\n- Create: `lib/types/cashflow.ts`\n- Test: `tests/unit/types/cashflow.test.ts`\n\n**Verify:** `npm test -- tests/unit/types/cashflow.test.ts` passes; `npx tsc --noEmit` succeeds.\n\n```json:metadata\n{\"files\":[\"lib/types/cashflow.ts\",\"tests/unit/types/cashflow.test.ts\"],\"verifyCommand\":\"npx tsc --noEmit && npm test -- tests/unit/types/cashflow.test.ts\",\"acceptanceCriteria\":[\"branded RecurrenceGroupId, PayCadenceId, ExpectedEventId\",\"interfaces DetectedRecurrence, PayCadenceCandidate, RunwayPoint, ExpectedEvent, CalendarDay, DirectDebit, LiquidityPreview\",\"string-literal unions Cadence, RecurrenceStatus, ExpectedEventStatus, ExpectedEventSource, DirectDebitKind\",\"type smoke tests pass\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 3: AU subcategory seed taxonomy",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** Seed AU deductible subcategories per ADR-9. Idempotent.\n\n**Files:**\n- Create: `lib/db/seeds/au-subcategories.ts`\n- Modify: `lib/db/seeds/index.ts`\n- Test: `tests/integration/db/seed-au-subcategories.test.ts`\n\n**Verify:** `npm test -- tests/integration/db/seed-au-subcategories.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/db/seeds/au-subcategories.ts\",\"lib/db/seeds/index.ts\",\"tests/integration/db/seed-au-subcategories.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/db/seed-au-subcategories.test.ts\",\"acceptanceCriteria\":[\"seeds at least one of each: wfh, donation, work_tools, motor_vehicle, professional_sub\",\"running twice is idempotent\",\"is_deductible_candidate=true for all seeded subcategories\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 4: Recurrence detector pure function + tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** detectRecurrence(txs, opts) returns DetectedRecurrence[]. Pure function used by projection worker and (later) subscription dashboard.\n\n**Files:**\n- Create: `lib/domain/recurrence.ts`\n- Test: `tests/unit/domain/recurrence.test.ts`\n- Fixtures: `tests/fixtures/cashflow-runway/recurrence/{monthly-netflix,fortnightly-rent,random-noise}.json`\n\n**Verify:** `npm test -- tests/unit/domain/recurrence.test.ts` passes (3 cases).\n\n```json:metadata\n{\"files\":[\"lib/domain/recurrence.ts\",\"tests/unit/domain/recurrence.test.ts\",\"tests/fixtures/cashflow-runway/recurrence/\"],\"verifyCommand\":\"npm test -- tests/unit/domain/recurrence.test.ts\",\"acceptanceCriteria\":[\"detects monthly Netflix from 3 charges\",\"detects fortnightly rent from 4 charges\",\"returns 0 for unrelated noise\",\"signature matches spec §5.3\",\"groups carry memberTransactionIds for back-link\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 5: Pay cadence detector pure function + tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** detectPayCadence(creditTxs, opts) returns PayCadenceCandidate[]. Pure.\n\n**Files:**\n- Create: `lib/domain/pay-cadence.ts`\n- Create: `lib/domain/_stats.ts` (shared helpers extracted from recurrence)\n- Test: `tests/unit/domain/pay-cadence.test.ts`\n- Fixtures: `tests/fixtures/cashflow-runway/pay-cadence/{fortnightly-acme,irregular}.json`\n\n**Verify:** `npm test -- tests/unit/domain/pay-cadence.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/domain/pay-cadence.ts\",\"lib/domain/_stats.ts\",\"tests/unit/domain/pay-cadence.test.ts\",\"tests/fixtures/cashflow-runway/pay-cadence/\"],\"verifyCommand\":\"npm test -- tests/unit/domain/pay-cadence.test.ts\",\"acceptanceCriteria\":[\"detects fortnightly ACME payroll\",\"returns 0 for irregular credits\",\"filters to credits >= minAmount (default $100)\",\"groups by employer pattern\",\"shared stats helpers extracted to _stats.ts\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 6: Runway projection pure function + tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** projectRunway(startBalance, events, horizonDays, today) -> RunwayPoint[].\n\n**Files:**\n- Create: `lib/domain/runway.ts`\n- Test: `tests/unit/domain/runway.test.ts`\n\n**Verify:** `npm test -- tests/unit/domain/runway.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/domain/runway.ts\",\"tests/unit/domain/runway.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/domain/runway.test.ts\",\"acceptanceCriteria\":[\"output length = horizonDays + 1\",\"flat balance when no events\",\"subtracts outflow on expected_date and propagates\",\"ignores events past horizon\",\"low/high reflect range bands\",\"deterministic (today is parameterised)\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 7: Direct-debit classifier pure function + tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** classifyAsDirectDebit(group) -> dd_mandate | bpay | merchant_pull | null.\n\n**Files:**\n- Create: `lib/domain/direct-debits.ts`\n- Test: `tests/unit/domain/direct-debits.test.ts`\n\n**Verify:** `npm test -- tests/unit/domain/direct-debits.test.ts` passes (table of cases).\n\n```json:metadata\n{\"files\":[\"lib/domain/direct-debits.ts\",\"tests/unit/domain/direct-debits.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/domain/direct-debits.test.ts\",\"acceptanceCriteria\":[\"returns dd_mandate for DD/DEFT/DIRECT DEBIT tokens\",\"returns bpay for BPAY tokens\",\"returns merchant_pull for non-DD non-BPAY non-transfer\",\"returns null for TFR/INTERNAL TRANSFER\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 8: project-expected-events worker + integration tests",
+      "status": "pending",
+      "blockedBy": [0, 1, 3, 4],
+      "description": "**Goal:** Materialise expected_events from recurrence_groups + pay_cadences. Idempotent. Honours re-materialisation contract per spec §3.7.\n\n**Files:**\n- Create: `lib/jobs/project-expected-events.ts`\n- Modify: `lib/jobs/index.ts` (register pg-boss handler + nightly schedule + fanout)\n- Test: `tests/integration/jobs/project-expected-events.test.ts`\n\n**Verify:** `npm test -- tests/integration/jobs/project-expected-events.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/jobs/project-expected-events.ts\",\"lib/jobs/index.ts\",\"tests/integration/jobs/project-expected-events.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/jobs/project-expected-events.test.ts\",\"acceptanceCriteria\":[\"materialises monthly outflow as 3 events over 90d\",\"idempotent across runs\",\"manual rows survive\",\"snoozed/dismissed/matched rows survive\",\"cancelled groups produce no rows\",\"single db transaction\",\"pg-boss handler registered\",\"nightly cron fanout per active user\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 9: match-expected-events worker + integration tests",
+      "status": "pending",
+      "blockedBy": [0, 1],
+      "description": "**Goal:** On new transaction, mark closest pending/snoozed event as matched per spec §5.4.\n\n**Files:**\n- Create: `lib/jobs/match-expected-events.ts`\n- Modify: `lib/jobs/index.ts` (register handler)\n- Test: `tests/integration/jobs/match-expected-events.test.ts`\n\n**Verify:** `npm test -- tests/integration/jobs/match-expected-events.test.ts` passes (closest, no-match, snoozed-still-matchable).\n\n```json:metadata\n{\"files\":[\"lib/jobs/match-expected-events.ts\",\"lib/jobs/index.ts\",\"tests/integration/jobs/match-expected-events.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/jobs/match-expected-events.test.ts\",\"acceptanceCriteria\":[\"matches closest event by (date_delta, amount_delta)\",\"sign+amount band filtering correct\",\"snoozed events also matchable\",\"returns null when no candidate\",\"updates status to matched and sets matched_transaction_id\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 10: bills-calendar query + integration test",
+      "status": "pending",
+      "blockedBy": [0, 1, 7],
+      "description": "**Goal:** getBillsCalendar(userId, monthStart, monthEnd) -> CalendarDay[] with effective-status snooze handling.\n\n**Files:**\n- Create: `lib/db/queries/bills-calendar.ts`\n- Test: `tests/integration/db/queries/bills-calendar.test.ts`\n\n**Verify:** `npm test -- tests/integration/db/queries/bills-calendar.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/db/queries/bills-calendar.ts\",\"tests/integration/db/queries/bills-calendar.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/db/queries/bills-calendar.test.ts\",\"acceptanceCriteria\":[\"groups events by expected_date within range\",\"excludes dismissed and superseded\",\"effectiveStatus computed lazily for snoozed (expired snooze treated as pending)\",\"omits empty days from result\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 11: direct-debits-list query + integration test",
+      "status": "pending",
+      "blockedBy": [0, 1, 6],
+      "description": "**Goal:** getDirectDebitRegister(userId, opts) -> DirectDebit[] from active recurrence_groups.\n\n**Files:**\n- Create: `lib/db/queries/direct-debits-list.ts`\n- Test: `tests/integration/db/queries/direct-debits-list.test.ts`\n\n**Verify:** `npm test -- tests/integration/db/queries/direct-debits-list.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/db/queries/direct-debits-list.ts\",\"tests/integration/db/queries/direct-debits-list.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/db/queries/direct-debits-list.test.ts\",\"acceptanceCriteria\":[\"returns one row per classified group\",\"joins to merchants for display name\",\"activeOnly filter works\",\"recentlyChanged filter (stddev/mean > 0.05) works\",\"non-classified groups excluded\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 12: liquidity-preview query + integration test",
+      "status": "pending",
+      "blockedBy": [0, 1, 5, 7],
+      "description": "**Goal:** getLiquidityPreview(userId, horizonDays) composes balance + projection + buffer.\n\n**Files:**\n- Create: `lib/db/queries/liquidity-preview.ts`\n- Test: `tests/integration/db/queries/liquidity-preview.test.ts`\n\n**Verify:** `npm test -- tests/integration/db/queries/liquidity-preview.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/db/queries/liquidity-preview.ts\",\"tests/integration/db/queries/liquidity-preview.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/db/queries/liquidity-preview.test.ts\",\"acceptanceCriteria\":[\"sums current balance from active accounts\",\"loads horizon-bounded pending+snoozed events with effective-status filter\",\"calls projectRunway and returns LiquidityPreview shape\",\"flags days where lowCents < bufferCents\",\"31 points for 30d horizon\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 13: Liquidity preview UI page (/runway) + buffer setting",
+      "status": "pending",
+      "blockedBy": [11],
+      "description": "**Goal:** Default landing for runway feature. Recharts chart + buffer line + upcoming events list + buffer-edit form.\n\n**Files:**\n- Create: `app/(authenticated)/runway/page.tsx`\n- Create: `app/(authenticated)/runway/_components/RunwayChart.tsx`\n- Create: `app/(authenticated)/runway/_components/UpcomingEventsList.tsx`\n- Create: `app/(authenticated)/runway/actions/set-buffer.ts`\n\n**Verify:** Manual smoke test: `npm run dev` → `/runway?horizon=30` renders chart with seeded data.\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/runway/\"],\"verifyCommand\":\"manual smoke + Playwright covered in Task 17\",\"acceptanceCriteria\":[\"page reads ?horizon=30|60|90 (default 30)\",\"server-side data fetch\",\"chart with main line + low/high band + buffer reference line\",\"dip days highlighted\",\"upcoming events list (next 10) below\",\"buffer edit form persists via server action\"]}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Task 14: Bills calendar UI page (/runway/calendar)",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** Month grid; cell click opens side panel with snooze/dismiss/cancel-at-source actions.\n\n**Files:**\n- Create: `app/(authenticated)/runway/calendar/page.tsx`\n- Create: `app/(authenticated)/runway/calendar/_components/MonthGrid.tsx`\n- Create: `app/(authenticated)/runway/calendar/_components/EventDetailPanel.tsx`\n- Create: `app/(authenticated)/runway/calendar/actions/{snooze,dismiss,cancel-at-source}.ts`\n\n**Verify:** Manual smoke + Playwright in Task 17.\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/runway/calendar/\"],\"verifyCommand\":\"manual smoke + Playwright covered in Task 17\",\"acceptanceCriteria\":[\"reads ?month=YYYY-MM (default current)\",\"7-col grid with dimmed out-of-month days\",\"cells list events with confidence dot\",\"side panel has snooze/dismiss/cancel buttons\",\"snooze persists status='snoozed' + snoozed_until\",\"dismiss persists status='dismissed'\",\"cancel-at-source updates recurrence_groups.status='cancelled' + enqueues projection\"]}\n```"
+    },
+    {
+      "id": 14,
+      "subject": "Task 15: Direct-debit register UI page (/runway/direct-debits)",
+      "status": "pending",
+      "blockedBy": [10],
+      "description": "**Goal:** Sortable table of direct debits and recurring pulls with active-only and recently-changed filters.\n\n**Files:**\n- Create: `app/(authenticated)/runway/direct-debits/page.tsx`\n- Create: `app/(authenticated)/runway/direct-debits/_components/DirectDebitsTable.tsx`\n\n**Verify:** Manual smoke + Playwright in Task 17.\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/runway/direct-debits/\"],\"verifyCommand\":\"manual smoke + Playwright covered in Task 17\",\"acceptanceCriteria\":[\"reads ?active=1 and ?changed=1 query params\",\"sortable headers (client-side)\",\"empty-state friendly message\",\"columns: merchant, kind, cadence, amount range, last seen, next expected, status\"]}\n```"
+    },
+    {
+      "id": 15,
+      "subject": "Task 16: Wire detectors into ingest pipeline + match worker on insert",
+      "status": "pending",
+      "blockedBy": [3, 4, 7, 8],
+      "description": "**Goal:** Statement parse completion triggers refreshRecurrencesForUser; transaction insert enqueues match-expected-events.\n\n**Files:**\n- Create: `lib/jobs/refresh-recurrences.ts`\n- Modify: `lib/jobs/parse-statement.ts` (call refreshRecurrencesForUser at end)\n- Modify: transaction-insert pathway (enqueue match-expected-events)\n- Create: `lib/db/migrations/<NNNN>_recurrence_groups_unique.sql` (unique index for upsert)\n- Test: `tests/integration/jobs/refresh-recurrences.test.ts`\n\n**Verify:** `npm test -- tests/integration/jobs/refresh-recurrences.test.ts` passes.\n\n```json:metadata\n{\"files\":[\"lib/jobs/refresh-recurrences.ts\",\"lib/jobs/parse-statement.ts\",\"lib/db/migrations/\",\"tests/integration/jobs/refresh-recurrences.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/jobs/refresh-recurrences.test.ts\",\"acceptanceCriteria\":[\"upserts recurrence_groups with unique key (user_id, merchant_id-or-pattern)\",\"upserts pay_cadences but never overrides active manual cadences\",\"enqueues project-expected-events after detection\",\"transaction insert enqueues match-expected-events\",\"idempotent: second run produces same group count\"]}\n```"
+    },
+    {
+      "id": 16,
+      "subject": "Task 17: Playwright E2E happy path",
+      "status": "pending",
+      "blockedBy": [12, 13, 14, 15],
+      "description": "**Goal:** End-to-end test covering upload → detection → projection → calendar → snooze → liquidity preview update.\n\n**Files:**\n- Create: `tests/e2e/cashflow-runway.spec.ts`\n- Create: `tests/fixtures/cashflow-runway/e2e/cba-anonymised.csv` (12 months, monthly Netflix + fortnightly payroll)\n\n**Verify:** `npx playwright test tests/e2e/cashflow-runway.spec.ts` passes against fresh test environment.\n\n```json:metadata\n{\"files\":[\"tests/e2e/cashflow-runway.spec.ts\",\"tests/fixtures/cashflow-runway/e2e/\"],\"verifyCommand\":\"npx playwright test tests/e2e/cashflow-runway.spec.ts\",\"acceptanceCriteria\":[\"signs in (test user)\",\"creates account, uploads CSV, waits for parse\",\"navigates /runway, sees chart\",\"navigates /runway/calendar, snoozes Netflix cell\",\"projection updates after snooze\",\"navigates /runway/direct-debits, sees >=1 row\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-04T00:00:00Z"
+}

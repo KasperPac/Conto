@@ -1,0 +1,33 @@
+{
+  "planPath": "Docs/superpowers/plans/2026-05-04-tax-and-obligations-foundations-plan.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 1: Write ADR-9 (tax-aware categorisation)",
+      "status": "completed",
+      "description": "**Goal:** Self-contained decision record explaining why categories carry deduction flags from V1.\n\n**Files:**\n- Create: `Docs/adr/009-tax-aware-categorisation.md`\n\n**Verify:** `Test-Path Docs/adr/009-tax-aware-categorisation.md` returns True; Status/Context/Decision/Consequences headings all present.\n\n```json:metadata\n{\"files\":[\"Docs/adr/009-tax-aware-categorisation.md\"],\"verifyCommand\":\"Test-Path Docs/adr/009-tax-aware-categorisation.md\",\"acceptanceCriteria\":[\"file exists\",\"four required headings\",\"Status is Accepted\",\"references ADR-1 and ADR-4\",\"lists schema columns: is_deductible_candidate, deduction_kind, receipt_object_key, receipt_uploaded_at\",\"names AU seed taxonomy buckets\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 2: Write ADR-10 (cashflow forecasting)",
+      "status": "completed",
+      "blockedBy": [0],
+      "description": "**Goal:** Decision record explaining why Conto projects forward, not just reports past.\n\n**Files:**\n- Create: `Docs/adr/010-cashflow-forecasting.md`\n\n**Verify:** `Test-Path Docs/adr/010-cashflow-forecasting.md` returns True; four headings present.\n\n```json:metadata\n{\"files\":[\"Docs/adr/010-cashflow-forecasting.md\"],\"verifyCommand\":\"Test-Path Docs/adr/010-cashflow-forecasting.md\",\"acceptanceCriteria\":[\"file exists\",\"four required headings\",\"Status is Accepted\",\"references ADR-4 and ADR-5\",\"states 30/60/90 horizon\",\"names Phase 2.5 position\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 3: Write ADR-11 (expected events first-class)",
+      "status": "completed",
+      "blockedBy": [1],
+      "description": "**Goal:** Decision record explaining choice of materialised expected_events table over computed-on-demand.\n\n**Files:**\n- Create: `Docs/adr/011-expected-events-first-class.md`\n\n**Verify:** `Test-Path Docs/adr/011-expected-events-first-class.md` returns True; four headings present.\n\n```json:metadata\n{\"files\":[\"Docs/adr/011-expected-events-first-class.md\"],\"verifyCommand\":\"Test-Path Docs/adr/011-expected-events-first-class.md\",\"acceptanceCriteria\":[\"file exists\",\"four required headings\",\"Status is Accepted\",\"states alternative considered and why rejected\",\"names source values including future tax_obligation\",\"states re-materialisation contract\",\"references ADR-1\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 4: Update Docs/PLAN.md (ADRs §2, schema §4, phases §8, open questions §11, changelog)",
+      "status": "completed",
+      "blockedBy": [2],
+      "description": "**Goal:** Bring planning document up to date with the three new ADRs and their schema/phase implications.\n\n**Files:**\n- Modify: `Docs/PLAN.md` (sections 2, 4, 8, 11, and changelog)\n\n**Verify:** Select-String for ADR-9, ADR-10, ADR-11, Phase 2.5, recurrence_groups, expected_events, pay_cadences, cashflow_buffer_cents, v0.2 (2026-05-04) all return at least 1 match.\n\n```json:metadata\n{\"files\":[\"Docs/PLAN.md\"],\"verifyCommand\":\"Select-String -Path Docs/PLAN.md -Pattern 'ADR-9','ADR-10','ADR-11','Phase 2.5','recurrence_groups','expected_events','pay_cadences','cashflow_buffer_cents'\",\"acceptanceCriteria\":[\"§2 lists ADR-9/10/11 as one-liners\",\"§4 contains new schema for recurrence_groups, pay_cadences, expected_events\",\"§4 alters categories, transactions, users, payslips\",\"§8 inserts Phase 2.5 between Phase 2 and 3\",\"§8 renames Phase 3 to classification & subscription polish\",\"§8 lists tax features in Phases 3, 4, 5, 6\",\"§11 records resolved/deferred items\",\"changelog has v0.2 (2026-05-04) entry\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-04T02:00:00Z"
+}
