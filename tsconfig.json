@@ -15,7 +15,7 @@
     "skipLibCheck": true,
     "allowJs": false,
     "incremental": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "isolatedModules": true,
     "resolveJsonModule": true,
     "plugins": [
