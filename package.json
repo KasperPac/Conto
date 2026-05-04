@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",
@@ -16,8 +18,10 @@
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^0.511.0",
     "next": "^15.3.0",
+    "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.3",
@@ -26,10 +30,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.17.57",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "autoprefixer": "^10.4.21",
     "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.27.0",
     "eslint-config-next": "^15.3.0",
     "postcss": "^8.5.3",
