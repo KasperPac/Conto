@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: conto-postgres
+    environment:
+      POSTGRES_USER: conto
+      POSTGRES_PASSWORD: conto
+      POSTGRES_DB: conto
+    ports:
+      - "5432:5432"
+    volumes:
+      - conto_pg_data:/var/lib/postgresql/data
+      - ./scripts/db-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conto -d conto"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  conto_pg_data:
