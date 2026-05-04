@@ -72,7 +72,7 @@ Locked-in choices:
 | Language | TypeScript, strict mode | |
 | Database | Postgres 16 | Local via Docker, hosted via Neon |
 | ORM | Drizzle | Type-safe, migration-first |
-| Auth | Lucia or Auth.js | Email + password, session cookies |
+| Auth | Better Auth (v1) | Email + password, session cookies; see ADR-12 |
 | UI | Tailwind + shadcn/ui | |
 | Charts | Recharts | |
 | Background jobs | pg-boss | Postgres-backed; no extra infra |
