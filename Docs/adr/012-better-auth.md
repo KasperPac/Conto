@@ -13,7 +13,7 @@ ADR-2 left the auth library open between Lucia and Auth.js. By Phase 0 implement
 3. Better Auth (v1, released 2024) emerged as the actively-maintained spirit-successor to Lucia: lightweight, Postgres-native via a Drizzle adapter, session-based, type-safe, with email + password and social-provider plugins.
 
 Conto needs:
-- Email + password as the V1 provider (per `PLAN.md` §3 — auth provider was always email + password, no OAuth at start).
+- Email + password as the V1 provider (per `PLAN.md` §8 Phase 0 scope — email + password first, no OAuth at start).
 - Sessions backed by Postgres (per ADR-2 — TypeScript everywhere, Drizzle as the ORM, no extra infra).
 - A clear path to add OAuth (Google / GitHub) later without rewriting auth.
 - Active maintenance — auth touches enough of the stack that betting on a maintenance-mode library is a real risk.
