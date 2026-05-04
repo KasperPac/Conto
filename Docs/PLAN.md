@@ -57,6 +57,9 @@ Conto reports past spending and projects the next 30/60/90 days from current bal
 **ADR-11: Expected events are first-class.**
 A dedicated `expected_events` table is materialised from `recurrence_groups` + `pay_cadences` + manual entries. Bills calendar, liquidity preview, and (future) tax-obligation reminders all read from it. Full record: `/docs/adr/011-expected-events-first-class.md`.
 
+**ADR-12: Better Auth as the auth library.**
+Supersedes the "Lucia or Auth.js" wording in ADR-2 with a commitment to **Better Auth** (v1, Drizzle adapter, email+password at V1 with OAuth providers added later). Lucia v3 in maintenance mode since late 2024; Auth.js abstraction heavier than needed. Full record: `/docs/adr/012-better-auth.md`.
+
 ---
 
 ## 3. Tech stack
@@ -93,12 +96,16 @@ The schema below is the V1 source of truth. Multi-tenancy via `user_id`. Money i
 ```sql
 users (
   id uuid pk,
-  email text unique,
-  password_hash text,
-  display_name text,
-  created_at timestamptz,
-  cashflow_buffer_cents bigint default 50000  -- $500 default; user-adjustable in settings
+  email text unique not null,
+  email_verified boolean not null default false,
+  name text,                                -- was display_name; renamed for Better Auth conventions
+  image text,                               -- nullable
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  cashflow_buffer_cents bigint not null default 50000  -- $500 default; user-adjustable in settings
 )
+-- Plus Better Auth's tables: session, account, verification (managed by Better Auth's schema; see ADR-12).
+-- password_hash from earlier drafts is dropped — credentials live in Better Auth's `account` table.
 
 accounts (
   id uuid pk,
@@ -618,3 +625,4 @@ Resolve before Phase 1:
 
 - **v0.1** — Initial draft.
 - **v0.2 (2026-05-04)** — Adopt ADR-9 (tax-aware categorisation), ADR-10 (cashflow forecasting), ADR-11 (expected events first-class). Schema additions in §4: `recurrence_groups`, `pay_cadences`, `expected_events`; alters to `categories`, `transactions`, `users`, `payslips`. Phase 2.5 inserted in §8 between Phase 2 and Phase 3. Tax features sequenced into Phases 3–6.
+- **v0.3 (2026-05-04)** — Phase 0 implementation begins. Adopt ADR-12 (Better Auth supersedes the Lucia/Auth.js option in ADR-2). `users` schema reconciled (drops `password_hash`, adds `email_verified`/`name`/`image`/`updated_at`). All §4 tables — including Plan A deltas — now live in `lib/db/schema.ts` and ship via `lib/db/migrations/0000_init.sql`. AU subcategory seed automatic on `npm run db:seed`. README "Getting started" reflects the runnable Docker + Next.js + worker stack.
