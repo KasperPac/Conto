@@ -1,0 +1,95 @@
+{
+  "planPath": "Docs/superpowers/plans/2026-05-04-phase-0-foundation-plan.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 1: Next.js scaffold with TypeScript strict, Tailwind, shadcn/ui primitives",
+      "status": "pending",
+      "description": "**Goal:** Bootstrap Next.js 15 (App Router) + TS strict + Tailwind + shadcn primitives so `npm run dev` boots and `npm run build` succeeds.\n\n**Files:** package.json, tsconfig.json, next.config.mjs, tailwind.config.ts, postcss.config.mjs, app/layout.tsx, app/page.tsx, app/globals.css, components/ui/{button,input,label,card,form}.tsx, lib/utils.ts, components.json\n\n**Verify:** `npm run typecheck && npm run build` exits 0.\n\n```json:metadata\n{\"files\":[\"package.json\",\"tsconfig.json\",\"next.config.mjs\",\"tailwind.config.ts\",\"app/\",\"components/ui/\",\"lib/utils.ts\"],\"verifyCommand\":\"npm run typecheck && npm run build\",\"acceptanceCriteria\":[\"npm install completes\",\"npm run dev serves placeholder\",\"npm run build + typecheck succeed\",\"tsconfig has strict + @/* alias\",\"Tailwind classes work\",\"shadcn Button renders\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 2: Env validation with zod + .env.example",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** parseEnv() fails fast on missing/malformed env; .env.example documents every required key.\n\n**Files:** lib/types/env.ts, .env.example, tests/unit/env.test.ts\n\n**Verify:** Test runs in Task 11; pre-Task-11 verify by importing in app/page.tsx temporarily.\n\n```json:metadata\n{\"files\":[\"lib/types/env.ts\",\".env.example\",\"tests/unit/env.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/env.test.ts\",\"acceptanceCriteria\":[\"parseEnv returns typed obj when all vars present\",\"throws readable error naming missing key\",\".env.example documents every key\",\"result cached after first call\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 3: Docker compose for Postgres (dev + test databases)",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** `docker compose up -d` brings up Postgres 16 with both `conto` and `conto_test` databases; data persists via named volume.\n\n**Files:** docker-compose.yml, scripts/db-init.sql\n\n**Verify:** docker compose exec postgres psql -U conto -c \"\\\\l\" shows both databases.\n\n```json:metadata\n{\"files\":[\"docker-compose.yml\",\"scripts/db-init.sql\"],\"verifyCommand\":\"docker compose up -d && sleep 3 && docker compose exec postgres psql -U conto -c \\\"\\\\l\\\"\",\"acceptanceCriteria\":[\"Postgres 16 starts on :5432\",\"both conto and conto_test databases exist\",\"named volume persists across restart\",\"docker compose down -v cleans up\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 4: Drizzle scaffold + full schema + initial migration with RLS",
+      "status": "pending",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** All PLAN.md §4 tables (incl. Plan A deltas) + Better Auth tables in schema.ts; initial migration applies cleanly with RLS policies on every domain table.\n\n**Files:** drizzle.config.ts, lib/db/client.ts (with withUser helper), lib/db/schema.ts, lib/db/migrations/0000_init.sql, tests/integration/db/schema.test.ts\n\n**Verify:** `npm run db:migrate` applies cleanly + schema.test passes.\n\n```json:metadata\n{\"files\":[\"drizzle.config.ts\",\"lib/db/client.ts\",\"lib/db/schema.ts\",\"lib/db/migrations/\",\"tests/integration/db/schema.test.ts\"],\"verifyCommand\":\"npm run db:migrate && npm test -- tests/integration/db/schema.test.ts\",\"acceptanceCriteria\":[\"all §4 tables exist\",\"Plan A deltas present (deduction flag, receipt slot, recurrence_groups, pay_cadences, expected_events, cashflow_buffer_cents, payslips.cadence)\",\"users dropped password_hash; added email_verified/name/image/updated_at\",\"Better Auth tables (session/account/verification) present\",\"RLS enabled on every domain table with current_setting('app.user_id') policy\",\"partial index expected_events_pending_idx exists\",\"unique index on transactions(account_id, posted_date, amount_cents, description_raw)\",\"withUser(userId, fn) helper exported\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 5: AU subcategory seed + db:seed script",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** `npm run db:seed` populates AU deductible subcategories per ADR-9; idempotent.\n\n**Files:** lib/db/seeds/au-subcategories.ts, lib/db/seeds/index.ts, scripts/db-reset.ts, tests/integration/db/seed.test.ts\n\n**Verify:** seed creates ≥1 row per deduction_kind (5 kinds); 2nd run produces same row count.\n\n```json:metadata\n{\"files\":[\"lib/db/seeds/\",\"scripts/db-reset.ts\",\"tests/integration/db/seed.test.ts\"],\"verifyCommand\":\"npm run db:seed && npm test -- tests/integration/db/seed.test.ts\",\"acceptanceCriteria\":[\"≥1 subcategory per deduction_kind: wfh, donation, work_tools, motor_vehicle, professional_sub\",\"is_deductible_candidate=true and user_id=null on seeded rows\",\"idempotent across runs\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 6: Better Auth server config + catch-all route + getCurrentUserId",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** Better Auth wired to Drizzle; sign-up/in/out work via /api/auth/[...all]; getCurrentUserId() returns id or throws UnauthenticatedError.\n\n**Files:** lib/auth/better-auth.ts, lib/auth/server.ts, app/api/auth/[...all]/route.ts, tests/integration/auth/sign-up.test.ts\n\n**Verify:** sign-up.test.ts passes — sign up creates user+account+session; sign-in rejects bad credentials.\n\n```json:metadata\n{\"files\":[\"lib/auth/better-auth.ts\",\"lib/auth/server.ts\",\"app/api/auth/\",\"tests/integration/auth/\"],\"verifyCommand\":\"npm test -- tests/integration/auth/sign-up.test.ts\",\"acceptanceCriteria\":[\"POST /api/auth/sign-up/email creates user+account+session\",\"POST /api/auth/sign-in/email returns session cookie\",\"POST /api/auth/sign-out invalidates session\",\"getCurrentUserId returns id or throws UnauthenticatedError\",\"uses existing schema tables from Task 4\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 7: Better Auth client + sign-in / sign-up / dashboard pages + nav",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "**Goal:** Browser flow works end-to-end: /sign-up → submit → /dashboard → sign-out → /sign-in.\n\n**Files:** lib/auth/client.ts, app/sign-in/page.tsx, app/sign-up/page.tsx, app/(authenticated)/layout.tsx, app/(authenticated)/dashboard/page.tsx, components/nav.tsx, app/page.tsx (modify)\n\n**Verify:** Manual smoke; covered by Playwright in Task 12.\n\n```json:metadata\n{\"files\":[\"lib/auth/client.ts\",\"app/sign-in/\",\"app/sign-up/\",\"app/(authenticated)/\",\"components/nav.tsx\",\"app/page.tsx\"],\"verifyCommand\":\"manual smoke + Playwright in Task 12\",\"acceptanceCriteria\":[\"/ redirects to /sign-in (logged out) or /dashboard (logged in)\",\"/sign-up form submits and lands on /dashboard\",\"/sign-in form submits and lands on /dashboard\",\"/dashboard shows user name/email + Upload link\",\"nav has working sign-out button\",\"form validation errors surface inline\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 8: R2 storage client + putObject helper",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** putObject() PUTs to Cloudflare R2 and returns user-prefixed key per ADR-1.\n\n**Files:** lib/storage/r2.ts, lib/storage/put-object.ts, tests/integration/storage/put-object.test.ts\n\n**Verify:** put-object.test.ts passes against real R2 bucket.\n\n```json:metadata\n{\"files\":[\"lib/storage/\",\"tests/integration/storage/\"],\"verifyCommand\":\"npm test -- tests/integration/storage/put-object.test.ts\",\"acceptanceCriteria\":[\"returns key starting with ${userId}/\",\"object retrievable via HEAD afterward\",\"sanitises unsafe filenames\",\"failure modes throw readable errors\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 9: pg-boss singleton + worker entry + noop handler",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** Worker process runs forever; logs `[noop]` payload when noop job is sent.\n\n**Files:** lib/jobs/boss.ts, lib/jobs/noop.ts, lib/jobs/index.ts, lib/jobs/worker.ts, tests/integration/jobs/noop.test.ts\n\n**Verify:** noop.test.ts passes (start, send, work, receive).\n\n```json:metadata\n{\"files\":[\"lib/jobs/\",\"tests/integration/jobs/\"],\"verifyCommand\":\"npm test -- tests/integration/jobs/noop.test.ts\",\"acceptanceCriteria\":[\"worker:dev logs [worker] ready\",\"boss.send('noop', payload) causes worker to log it\",\"SIGINT/SIGTERM handled gracefully\",\"pg-boss schema initialised on first start\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 10: Upload route + page (the Phase 0 demo)",
+      "status": "pending",
+      "blockedBy": [6, 7, 8],
+      "description": "**Goal:** Authenticated user submits file at /upload → server PUTs to R2 → enqueues noop → page shows R2 key → worker logs noop.\n\n**Files:** app/(authenticated)/upload/page.tsx, app/api/upload/route.ts, lib/jobs/boss.ts (refactor for lazy start), lib/jobs/worker.ts (use getBossRaw), tests/integration/api/upload.test.ts\n\n**Verify:** upload.test.ts passes (401 unauthenticated path); manual smoke completes the demo.\n\n```json:metadata\n{\"files\":[\"app/api/upload/\",\"app/(authenticated)/upload/\",\"lib/jobs/boss.ts\",\"lib/jobs/worker.ts\",\"tests/integration/api/upload.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/api/upload.test.ts\",\"acceptanceCriteria\":[\"POST /api/upload with session+file returns {ok, key} and enqueues noop\",\"POST /api/upload no session returns 401\",\"POST /api/upload no file returns 400\",\"R2 PUT failure returns 502 without enqueueing\",\"page renders form and displays returned key on success\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 11: Vitest config + db helpers + smoke test",
+      "status": "pending",
+      "blockedBy": [3, 5],
+      "description": "**Goal:** `npm test` runs all unit + integration tests; resetTestDb + seedUserAndAccount helpers exist.\n\n**Files:** vitest.config.ts, tests/helpers/db.ts, tests/unit/smoke.test.ts (finalise)\n\n**Verify:** `npm test` exits 0 with all integration tests from Tasks 2/4/5/6/8/9/10 passing.\n\n```json:metadata\n{\"files\":[\"vitest.config.ts\",\"tests/helpers/db.ts\",\"tests/unit/smoke.test.ts\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"npm test runs unit + integration\",\"smoke + env tests pass\",\"all integration tests from Tasks 4/5/6/8/9/10 pass\",\"resetTestDb truncates all domain tables in dep order\",\"seedUserAndAccount creates user via Better Auth + accounts row\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 12: Playwright config + e2e happy path",
+      "status": "pending",
+      "blockedBy": [9, 10],
+      "description": "**Goal:** Playwright test exercises full Phase 0 demo: sign-up → upload → success message with user-prefixed key.\n\n**Files:** playwright.config.ts, tests/e2e/auth-and-upload.spec.ts, tests/e2e/global-setup.ts, tests/fixtures/hello.txt\n\n**Verify:** `npm run test:e2e` passes against fresh test DB; webServer config starts dev + worker.\n\n```json:metadata\n{\"files\":[\"playwright.config.ts\",\"tests/e2e/\",\"tests/fixtures/hello.txt\"],\"verifyCommand\":\"npm run test:e2e\",\"acceptanceCriteria\":[\"webServer starts npm run dev + npm run worker:dev\",\"globalSetup resets test DB\",\"signs up fresh user, uploads hello.txt, asserts success message\",\"asserts key matches uuid/uuid/hello.txt shape\",\"uses TEST_DATABASE_URL not DATABASE_URL\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 13: ADR-12, README, PLAN.md updates, Changelog v0.3",
+      "status": "pending",
+      "description": "**Goal:** Codify Phase 0 implementation in planning docs. ADR-12 (Better Auth supersedes ADR-2 option). PLAN.md §2/§4/changelog updates. README runnable getting-started.\n\n**Files:** Docs/adr/012-better-auth.md (create), Docs/PLAN.md (modify), README.md (modify)\n\n**Verify:** Test-Path ADR-12; PLAN.md contains ADR-12/email_verified/v0.3 (2026; README contains docker compose up + npm run worker:dev + Phase 0 — foundation.\n\n```json:metadata\n{\"files\":[\"Docs/adr/012-better-auth.md\",\"Docs/PLAN.md\",\"README.md\"],\"verifyCommand\":\"Test-Path Docs/adr/012-better-auth.md && Select-String -Path Docs/PLAN.md -Pattern 'ADR-12','email_verified','v0.3'\",\"acceptanceCriteria\":[\"ADR-12 file exists with Status/Context/Decision/Consequences\",\"PLAN.md §2 lists ADR-12 one-liner\",\"PLAN.md §4 users dropped password_hash + added email_verified/name/image/updated_at\",\"PLAN.md changelog v0.3 (2026-05-04) entry\",\"README replaces TBD with runnable steps\",\"README status reads 'Phase 0 — foundation'\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-04T03:00:00Z"
+}
