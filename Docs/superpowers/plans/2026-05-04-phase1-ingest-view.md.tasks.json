@@ -1,0 +1,89 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-04-phase1-ingest-view.md",
+  "tasks": [
+    {
+      "id": 9,
+      "subject": "Task 1: Schema migration + pdfjs-dist + extraction utility",
+      "status": "pending",
+      "description": "**Goal:** Make statements.account_id nullable, install pdfjs-dist, ship positioned-text extraction utility with passing unit test.\n\n**Files:**\n- Modify: `lib/db/schema.ts`\n- Create: `lib/db/migrations/0001_statements_account_nullable.sql`\n- Modify: `package.json`\n- Create: `lib/parsers/pdf/types.ts`\n- Create: `lib/parsers/pdf/extract.ts`\n- Create: `tests/unit/parsers/extract.test.ts`\n- Copy: `tests/fixtures/pdf/nab/nab_pdf_v1_sample.pdf`\n\n**Acceptance Criteria:**\n- [ ] statements.account_id allows NULL in DB\n- [ ] extractRows(buf) returns TextRow[] sorted top-to-bottom\n- [ ] Unit test passes against real NAB fixture\n\n**Verify:** `npm test -- tests/unit/parsers/extract.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"lib/db/schema.ts\",\"lib/parsers/pdf/types.ts\",\"lib/parsers/pdf/extract.ts\",\"tests/unit/parsers/extract.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/parsers/extract.test.ts\",\"acceptanceCriteria\":[\"statements.account_id allows NULL\",\"extractRows returns sorted TextRow[]\",\"unit test passes\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 2: Bank detection + Up fixture",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** detectBank(rows) returns correct template ID for NAB and Up Bank PDFs.\n\n**Files:**\n- Copy: `tests/fixtures/pdf/up/up_pdf_v1_sample.pdf`\n- Create: `lib/parsers/pdf/detect.ts`\n- Create: `tests/unit/parsers/detect.test.ts`\n\n**Acceptance Criteria:**\n- [ ] NAB fixture → 'nab_pdf_v1'\n- [ ] Up fixture → 'up_pdf_v1'\n- [ ] Empty rows → null\n\n**Verify:** `npm test -- tests/unit/parsers/detect.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"lib/parsers/pdf/detect.ts\",\"tests/unit/parsers/detect.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/parsers/detect.test.ts\",\"acceptanceCriteria\":[\"NAB detected\",\"Up detected\",\"null for unknown\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 3: NAB parser",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** parseNab(buf) returns valid ParsedStatement with signed cents and ISO dates from real NAB fixture.\n\n**Files:**\n- Create: `lib/parsers/pdf/nab.ts`\n- Create: `tests/unit/parsers/nab.test.ts`\n\n**Acceptance Criteria:**\n- [ ] template_id === 'nab_pdf_v1', institution === 'NAB'\n- [ ] All posted_date match /^\\d{4}-\\d{2}-\\d{2}$/\n- [ ] All amount_cents are non-zero bigints\n\n**Verify:** `npm test -- tests/unit/parsers/nab.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"lib/parsers/pdf/nab.ts\",\"tests/unit/parsers/nab.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/parsers/nab.test.ts\",\"acceptanceCriteria\":[\"correct template_id\",\"valid dates\",\"non-zero bigint amounts\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 4: Up Bank parser",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** parseUp(buf) returns valid ParsedStatement from real Up Bank fixture.\n\n**Files:**\n- Create: `lib/parsers/pdf/up.ts`\n- Create: `tests/unit/parsers/up.test.ts`\n\n**Acceptance Criteria:**\n- [ ] template_id === 'up_pdf_v1', institution === 'Up'\n- [ ] All posted_date match /^\\d{4}-\\d{2}-\\d{2}$/\n- [ ] All amount_cents are non-zero bigints\n\n**Verify:** `npm test -- tests/unit/parsers/up.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"lib/parsers/pdf/up.ts\",\"tests/unit/parsers/up.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/parsers/up.test.ts\",\"acceptanceCriteria\":[\"correct template_id\",\"valid dates\",\"non-zero bigint amounts\"]}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Task 5: Parser dispatch + R2 getObject",
+      "status": "pending",
+      "blockedBy": [9, 10, 11, 12],
+      "description": "**Goal:** dispatch(buf) routes to correct parser or throws UnknownFormatError; getObject downloads from R2.\n\n**Files:**\n- Create: `lib/parsers/pdf/index.ts`\n- Create: `lib/storage/get-object.ts`\n- Create: `tests/unit/parsers/dispatch.test.ts`\n\n**Verify:** `npm test -- tests/unit/parsers/dispatch.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"lib/parsers/pdf/index.ts\",\"lib/storage/get-object.ts\",\"tests/unit/parsers/dispatch.test.ts\"],\"verifyCommand\":\"npm test -- tests/unit/parsers/dispatch.test.ts\",\"acceptanceCriteria\":[\"routes NAB\",\"routes Up\",\"throws for unknown\"]}\n```"
+    },
+    {
+      "id": 14,
+      "subject": "Task 6: DB query helpers",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** Query helpers for statements, accounts (findOrCreate + balance), and transactions (bulkInsert + filtered list).\n\n**Files:**\n- Create: `lib/db/queries/statements.ts`\n- Create: `lib/db/queries/accounts.ts`\n- Create: `lib/db/queries/transactions.ts`\n\n**Verify:** `npm run typecheck` → no errors\n\n```json:metadata\n{\"files\":[\"lib/db/queries/statements.ts\",\"lib/db/queries/accounts.ts\",\"lib/db/queries/transactions.ts\"],\"verifyCommand\":\"npm run typecheck\",\"acceptanceCriteria\":[\"typecheck passes\",\"withUser used throughout\"]}\n```"
+    },
+    {
+      "id": 15,
+      "subject": "Task 7: parse-statement job + upload API + integration test",
+      "status": "pending",
+      "blockedBy": [10, 11, 12, 13, 14],
+      "description": "**Goal:** Upload API creates statement record and enqueues parse-statement job; job parses PDF and inserts transactions.\n\n**Files:**\n- Create: `lib/jobs/parse-statement.ts`\n- Modify: `lib/jobs/index.ts`\n- Modify: `app/api/upload/route.ts`\n- Create: `tests/integration/jobs/parse-statement.test.ts`\n\n**Verify:** `npm test -- tests/integration/jobs/parse-statement.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"lib/jobs/parse-statement.ts\",\"lib/jobs/index.ts\",\"app/api/upload/route.ts\",\"tests/integration/jobs/parse-statement.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/jobs/parse-statement.test.ts\",\"acceptanceCriteria\":[\"NAB parses and inserts\",\"dedup works\",\"unknown format fails gracefully\"]}\n```"
+    },
+    {
+      "id": 16,
+      "subject": "Task 8: Statements page + shadcn Badge/Select/Dialog",
+      "status": "pending",
+      "blockedBy": [15],
+      "description": "**Goal:** /statements lists all statement uploads with status badges.\n\n**Files:**\n- Create: `app/(authenticated)/statements/page.tsx`\n- Add: `components/ui/badge.tsx`, `components/ui/select.tsx`, `components/ui/dialog.tsx`\n- Modify: `app/(authenticated)/upload/page.tsx`\n\n**Verify:** Dev server — /statements renders after upload.\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/statements/page.tsx\",\"app/(authenticated)/upload/page.tsx\"],\"verifyCommand\":\"npm run dev\",\"acceptanceCriteria\":[\"statements page renders\",\"status badges show\",\"upload redirects\"]}\n```"
+    },
+    {
+      "id": 17,
+      "subject": "Task 9: Accounts page",
+      "status": "pending",
+      "blockedBy": [15],
+      "description": "**Goal:** /accounts lists accounts with reconstructed balance and inline rename.\n\n**Files:**\n- Create: `app/(authenticated)/accounts/page.tsx`\n- Create: `app/(authenticated)/accounts/rename-account.tsx`\n- Create: `app/actions/rename-account.ts`\n\n**Verify:** Dev server — /accounts shows balances.\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/accounts/page.tsx\",\"app/(authenticated)/accounts/rename-account.tsx\",\"app/actions/rename-account.ts\"],\"verifyCommand\":\"npm run dev\",\"acceptanceCriteria\":[\"balance displayed\",\"rename works\",\"links to transactions\"]}\n```"
+    },
+    {
+      "id": 18,
+      "subject": "Task 10: Transaction list page",
+      "status": "pending",
+      "blockedBy": [15],
+      "description": "**Goal:** /accounts/[id]/transactions shows paginated filterable transaction table.\n\n**Files:**\n- Create: `app/(authenticated)/accounts/[id]/transactions/page.tsx`\n\n**Verify:** Dev server — transaction rows display with filters.\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/accounts/[id]/transactions/page.tsx\"],\"verifyCommand\":\"npm run dev\",\"acceptanceCriteria\":[\"filters work\",\"balance shown\",\"pagination works\"]}\n```"
+    },
+    {
+      "id": 19,
+      "subject": "Task 11: Categories page + reclassification modal + integration test",
+      "status": "pending",
+      "blockedBy": [15],
+      "description": "**Goal:** /categories manages categories; reclassify modal on transaction rows creates rules optionally.\n\n**Files:**\n- Create: `app/(authenticated)/categories/page.tsx`\n- Create: `app/actions/categories.ts`\n- Create: `app/actions/reclassify.ts`\n- Create: `components/reclassify-modal.tsx`\n- Modify: `app/(authenticated)/accounts/[id]/transactions/page.tsx`\n- Create: `tests/integration/reclassification.test.ts`\n\n**Verify:** `npm test -- tests/integration/reclassification.test.ts` → PASS\n\n```json:metadata\n{\"files\":[\"app/(authenticated)/categories/page.tsx\",\"app/actions/categories.ts\",\"app/actions/reclassify.ts\",\"components/reclassify-modal.tsx\",\"tests/integration/reclassification.test.ts\"],\"verifyCommand\":\"npm test -- tests/integration/reclassification.test.ts\",\"acceptanceCriteria\":[\"category CRUD works\",\"reclassification sets manual source\",\"apply-to-all creates rule\"]}\n```"
+    },
+    {
+      "id": 20,
+      "subject": "Task 12: Nav update + E2E test",
+      "status": "pending",
+      "blockedBy": [16, 17, 18, 19],
+      "description": "**Goal:** Nav links updated; E2E test covers full Phase 1 happy path.\n\n**Files:**\n- Modify: `components/nav.tsx`\n- Create: `tests/e2e/phase1.spec.ts`\n\n**Verify:** `npm run test:e2e -- tests/e2e/phase1.spec.ts` → PASS\n\n```json:metadata\n{\"files\":[\"components/nav.tsx\",\"tests/e2e/phase1.spec.ts\"],\"verifyCommand\":\"npm run test:e2e -- tests/e2e/phase1.spec.ts\",\"acceptanceCriteria\":[\"nav has all links\",\"E2E happy path passes\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-04T00:00:00Z"
+}
