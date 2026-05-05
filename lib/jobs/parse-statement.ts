@@ -50,6 +50,7 @@ export async function registerParseStatement(boss: PgBoss): Promise<void> {
           status: 'parsed',
           parsedAt: new Date(),
         });
+        await boss.send('detect-transfers', { userId });
       } catch (err) {
         await updateStatement(userId, statementId, {
           status: 'failed',
