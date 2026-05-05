@@ -6,6 +6,7 @@ import { getAccountsWithBalance } from '@/lib/db/queries/accounts';
 import { db } from '@/lib/db/client';
 import { categories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { ReclassifyButton } from '@/components/reclassify-modal';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -110,9 +111,13 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
                   </td>
                   <td className="py-2 pr-4 max-w-xs truncate">{row.descriptionRaw}</td>
                   <td className="py-2 pr-4">
-                    <span className="text-xs px-2 py-0.5 rounded border text-zinc-500 cursor-pointer hover:bg-zinc-100">
-                      {row.categoryName ?? 'Uncategorised'}
-                    </span>
+                    <ReclassifyButton
+                      transactionId={row.id}
+                      description={row.descriptionRaw}
+                      currentCategoryId={row.categoryId ?? null}
+                      currentCategoryName={row.categoryName ?? null}
+                      categories={allCategories}
+                    />
                   </td>
                   <td className={`py-2 pr-4 text-right tabular-nums font-medium ${Number(row.amountCents) < 0 ? 'text-red-600' : 'text-green-700'}`}>
                     {formatCents(row.amountCents)}
