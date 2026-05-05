@@ -10,11 +10,13 @@ export async function registerHandlers(boss: PgBoss): Promise<void> {
   await registerParseStatement(boss);
   await registerDetectTransfers(boss);
 
+  await boss.createQueue('project-expected-events').catch(() => {});
   await boss.work('project-expected-events', async (job) => {
     const { userId, horizonDays } = job.data as { userId: string; horizonDays?: number };
     return projectExpectedEvents(userId, horizonDays ?? 90);
   });
 
+  await boss.createQueue('project-expected-events-fanout').catch(() => {});
   await boss.work('project-expected-events-fanout', async () => {
     const ids = await db.select({ id: users.id }).from(users);
     for (const { id } of ids) {
@@ -22,6 +24,7 @@ export async function registerHandlers(boss: PgBoss): Promise<void> {
     }
   });
 
+  await boss.createQueue('match-expected-events').catch(() => {});
   await boss.work('match-expected-events', async (job) => {
     const { transactionId } = job.data as { transactionId: string };
     return matchExpectedEventsForTransaction(transactionId);
