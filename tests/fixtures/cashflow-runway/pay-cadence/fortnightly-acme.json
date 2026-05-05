@@ -1,0 +1,5 @@
+[
+  {"id":"tx-p1","accountId":"acc-cba","postedDate":"2026-01-09","amountCents":250000,"descriptionClean":"ACME PTY LTD PAYROLL"},
+  {"id":"tx-p2","accountId":"acc-cba","postedDate":"2026-01-23","amountCents":250000,"descriptionClean":"ACME PTY LTD PAYROLL"},
+  {"id":"tx-p3","accountId":"acc-cba","postedDate":"2026-02-06","amountCents":250000,"descriptionClean":"ACME PTY LTD PAYROLL"}
+]
