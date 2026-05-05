@@ -8,6 +8,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     pool: 'forks',
     forks: { singleFork: true },
+    fileParallelism: false,
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/e2e/**', 'node_modules/**'],
     testTimeout: 15000,
