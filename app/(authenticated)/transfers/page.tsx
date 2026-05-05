@@ -288,8 +288,9 @@ export default async function TransfersPage({ searchParams }: Props) {
               </div>
               <form className="flex items-center gap-3" action={async (fd: FormData) => {
                 'use server';
-                const lt = (fd.get('linkType') ?? 'transfer') as 'transfer' | 'cc_payment';
-                await createManualTransferLink(fromTxId, toTxId, lt);
+                const raw = fd.get('linkType');
+                if (raw !== 'transfer' && raw !== 'cc_payment') throw new Error('Invalid link type');
+                await createManualTransferLink(fromTxId, toTxId, raw);
                 redirect('/transfers?tab=linked');
               }}>
                 <select name="linkType" className="border rounded px-2 py-1 text-sm" defaultValue="transfer">

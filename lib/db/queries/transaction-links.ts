@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { withUser } from '@/lib/db/client';
 import { transactionLinks, transactions, accounts } from '@/lib/db/schema';
@@ -118,7 +118,7 @@ export async function confirmLink(userId: string, linkId: string): Promise<void>
         fromId: transactionLinks.fromTransactionId,
         toId:   transactionLinks.toTransactionId,
       });
-    if (!link) return;
+    if (!link) throw new Error('Link not found');
     const ids = [link.fromId, link.toId].filter((id): id is string => id != null);
     if (ids.length > 0) {
       await tx.update(transactions)
@@ -173,12 +173,35 @@ export async function unlinkTransactions(userId: string, linkId: string): Promis
         fromId: transactionLinks.fromTransactionId,
         toId:   transactionLinks.toTransactionId,
       });
-    if (!link) return;
-    const ids = [link.fromId, link.toId].filter((id): id is string => id != null);
-    if (ids.length > 0) {
+    if (!link) throw new Error('Link not found');
+    const candidates = [link.fromId, link.toId].filter((id): id is string => id != null);
+    if (candidates.length === 0) return;
+
+    // Only reset isExcludedFromSpending for legs no longer referenced by any remaining link.
+    // A transaction may appear on multiple links (e.g. manual + suggested), so check first.
+    const remaining = await tx
+      .select({
+        fromId: transactionLinks.fromTransactionId,
+        toId:   transactionLinks.toTransactionId,
+      })
+      .from(transactionLinks)
+      .where(and(
+        eq(transactionLinks.userId, userId),
+        or(...candidates.flatMap(c => [
+          eq(transactionLinks.fromTransactionId, c),
+          eq(transactionLinks.toTransactionId, c),
+        ])),
+      ));
+
+    const stillLinked = new Set([
+      ...remaining.map(r => r.fromId),
+      ...remaining.map(r => r.toId).filter((id): id is string => id != null),
+    ]);
+    const toReset = candidates.filter(id => !stillLinked.has(id));
+    if (toReset.length > 0) {
       await tx.update(transactions)
         .set({ isExcludedFromSpending: false })
-        .where(and(eq(transactions.userId, userId), inArray(transactions.id, ids)));
+        .where(and(eq(transactions.userId, userId), inArray(transactions.id, toReset)));
     }
   });
 }
