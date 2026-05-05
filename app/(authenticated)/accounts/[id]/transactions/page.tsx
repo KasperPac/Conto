@@ -105,19 +105,25 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
             </thead>
             <tbody>
               {displayRows.map(row => (
-                <tr key={row.id} className="border-b last:border-0 hover:bg-zinc-50">
+                <tr key={row.id} className={`border-b last:border-0 hover:bg-zinc-50 ${row.isExcludedFromSpending ? 'opacity-50' : ''}`}>
                   <td className="py-2 pr-4 whitespace-nowrap text-zinc-500">
                     {new Date(row.postedDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="py-2 pr-4 max-w-xs truncate">{row.descriptionRaw}</td>
                   <td className="py-2 pr-4">
-                    <ReclassifyButton
-                      transactionId={row.id}
-                      description={row.descriptionRaw}
-                      currentCategoryId={row.categoryId ?? null}
-                      currentCategoryName={row.categoryName ?? null}
-                      categories={allCategories}
-                    />
+                    {row.isExcludedFromSpending ? (
+                      row.linkType === 'cc_payment'
+                        ? <span className="text-xs border border-purple-300 text-purple-700 rounded px-1.5 py-0.5">CC pmt</span>
+                        : <span className="text-xs border border-blue-300 text-blue-700 rounded px-1.5 py-0.5">Transfer</span>
+                    ) : (
+                      <ReclassifyButton
+                        transactionId={row.id}
+                        description={row.descriptionRaw}
+                        currentCategoryId={row.categoryId ?? null}
+                        currentCategoryName={row.categoryName ?? null}
+                        categories={allCategories}
+                      />
+                    )}
                   </td>
                   <td className={`py-2 pr-4 text-right tabular-nums font-medium ${Number(row.amountCents) < 0 ? 'text-red-600' : 'text-green-700'}`}>
                     {formatCents(row.amountCents)}

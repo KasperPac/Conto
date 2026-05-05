@@ -194,7 +194,10 @@ export const transactionLinks = pgTable('transaction_links', {
   confidence: numeric('confidence', { precision: 4, scale: 3 }),
   source: text('source').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  pairUniq: uniqueIndex('transaction_links_pair_unique')
+    .on(t.fromTransactionId, t.toTransactionId),
+}));
 
 export const subscriptions = pgTable('subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),
