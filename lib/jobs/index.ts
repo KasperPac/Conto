@@ -1,8 +1,23 @@
 import type { PgBoss } from 'pg-boss';
 import { registerParseStatement } from './parse-statement';
 import { registerDetectTransfers } from './detect-transfers';
+import { projectExpectedEvents } from './project-expected-events';
+import { db } from '@/lib/db/client';
+import { users } from '@/lib/db/schema';
 
 export async function registerHandlers(boss: PgBoss): Promise<void> {
   await registerParseStatement(boss);
   await registerDetectTransfers(boss);
+
+  await boss.work('project-expected-events', async (job) => {
+    const { userId, horizonDays } = job.data as { userId: string; horizonDays?: number };
+    return projectExpectedEvents(userId, horizonDays ?? 90);
+  });
+
+  await boss.work('project-expected-events-fanout', async () => {
+    const ids = await db.select({ id: users.id }).from(users);
+    for (const { id } of ids) {
+      await boss.send('project-expected-events', { userId: id });
+    }
+  });
 }
