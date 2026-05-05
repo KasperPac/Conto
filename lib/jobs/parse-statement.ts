@@ -4,6 +4,7 @@ import { dispatch, UnknownFormatError } from '@/lib/parsers/pdf/index';
 import { createStatement, updateStatement } from '@/lib/db/queries/statements';
 import { findOrCreateAccount } from '@/lib/db/queries/accounts';
 import { bulkInsertTransactions } from '@/lib/db/queries/transactions';
+import { refreshRecurrencesForUser } from '@/lib/jobs/refresh-recurrences';
 
 interface Payload {
   statementId: string;
@@ -51,6 +52,7 @@ export async function registerParseStatement(boss: PgBoss): Promise<void> {
           parsedAt: new Date(),
         });
         await boss.send('detect-transfers', { userId });
+        await refreshRecurrencesForUser(userId).catch(err => console.error('[refresh-recurrences]', err));
       } catch (err) {
         await updateStatement(userId, statementId, {
           status: 'failed',
