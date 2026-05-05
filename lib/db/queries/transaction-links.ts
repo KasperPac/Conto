@@ -141,7 +141,12 @@ export async function createManualLink(
   toTxId: string,
   linkType: 'transfer' | 'cc_payment',
 ): Promise<void> {
+  if (fromTxId === toTxId) throw new Error('Cannot link a transaction to itself');
   await withUser(userId, async (tx) => {
+    const owned = await tx.select({ id: transactions.id })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), inArray(transactions.id, [fromTxId, toTxId])));
+    if (owned.length !== 2) throw new Error('One or both transactions not found for user');
     await tx.insert(transactionLinks).values({
       userId,
       linkType,

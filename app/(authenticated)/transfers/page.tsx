@@ -34,7 +34,11 @@ function SourceBadge({ source }: { source: string }) {
 
 export default async function TransfersPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const tab = sp['tab'] ?? 'suggested';
+  const VALID_TABS = ['suggested', 'linked', 'manual'] as const;
+  type Tab = typeof VALID_TABS[number];
+  const tab: Tab = (VALID_TABS as readonly string[]).includes(sp['tab'] ?? '')
+    ? (sp['tab'] as Tab)
+    : 'suggested';
 
   let userId: string;
   try {
@@ -57,7 +61,9 @@ export default async function TransfersPage({ searchParams }: Props) {
     const perAccount = await Promise.all(
       allAccounts.map(a => getTransactions(userId, a.id, { search, limit: 10 }))
     );
-    searchResults = perAccount.flat().slice(0, 20);
+    searchResults = perAccount.flat()
+      .filter(r => r.id !== fromTxId)
+      .slice(0, 20);
   }
 
   const tabs = [
@@ -260,7 +266,7 @@ export default async function TransfersPage({ searchParams }: Props) {
                         </td>
                         <td className="py-1.5 text-right">
                           <Link
-                            href={`/transfers?tab=manual&fromTxId=${fromTxId}&toTxId=${r.id}`}
+                            href={`/transfers?tab=manual&fromTxId=${encodeURIComponent(fromTxId)}&toTxId=${r.id}`}
                             className="text-xs text-blue-600 hover:underline"
                           >
                             Select →
@@ -284,6 +290,7 @@ export default async function TransfersPage({ searchParams }: Props) {
                 'use server';
                 const lt = (fd.get('linkType') ?? 'transfer') as 'transfer' | 'cc_payment';
                 await createManualTransferLink(fromTxId, toTxId, lt);
+                redirect('/transfers?tab=linked');
               }}>
                 <select name="linkType" className="border rounded px-2 py-1 text-sm" defaultValue="transfer">
                   <option value="transfer">Transfer</option>
