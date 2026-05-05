@@ -1,9 +1,11 @@
+import type { Cents } from '@/lib/types/money';
+
 export interface TxWithAccount {
   id: string;
   accountId: string;
   accountType: 'checking' | 'savings' | 'credit_card';
   postedDate: string;    // ISO date YYYY-MM-DD
-  amountCents: bigint;   // signed; negative = debit
+  amountCents: Cents;    // signed; negative = debit
   descriptionRaw: string;
 }
 
@@ -18,7 +20,9 @@ const TRANSFER_WORDS = /\b(transfer|tfr|xfer|payment)\b/i;
 const ACCOUNT_FRAGMENT = /\d{4,}/;
 
 function daysDiff(a: string, b: string): number {
-  return Math.abs((Date.parse(a) - Date.parse(b)) / 86_400_000);
+  const diff = Date.parse(a) - Date.parse(b);
+  if (Number.isNaN(diff)) throw new Error(`Invalid date in daysDiff: "${a}", "${b}"`);
+  return Math.abs(diff / 86_400_000);
 }
 
 function scoreMatch(from: TxWithAccount, to: TxWithAccount): number {
