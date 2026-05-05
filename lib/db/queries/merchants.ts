@@ -13,7 +13,8 @@ export async function getUserMerchants(userId: string): Promise<LoadedMerchant[]
       isSubscription: merchants.isSubscription,
     })
     .from(merchants)
-    .where(or(isNull(merchants.userId), eq(merchants.userId, userId)));
+    .where(or(isNull(merchants.userId), eq(merchants.userId, userId)))
+    .orderBy(merchants.canonicalName);
 
   return rows.map(r => ({
     ...r,
