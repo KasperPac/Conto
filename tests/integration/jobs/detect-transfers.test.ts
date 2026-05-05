@@ -113,6 +113,8 @@ describe('detect-transfers job', () => {
     expect(link?.source).toBe('suggested');
 
     const [fromTx] = await testDb.select().from(schema.transactions).where(eq(schema.transactions.id, fromId));
+    const [toTx]   = await testDb.select().from(schema.transactions).where(eq(schema.transactions.id, toId));
     expect(fromTx?.isExcludedFromSpending).toBe(false);
+    expect(toTx?.isExcludedFromSpending).toBe(false);
   }, 20_000);
 });
