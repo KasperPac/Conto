@@ -3,6 +3,8 @@ import { db } from '@/lib/db/client';
 import { merchants } from '@/lib/db/schema';
 import type { LoadedMerchant } from '@/lib/domain/classification';
 
+// Ordered alphabetically — this determines pattern-match priority when multiple merchants
+// could match the same description. Keep merchant patterns non-overlapping to avoid surprises.
 export async function getUserMerchants(userId: string): Promise<LoadedMerchant[]> {
   const rows = await db
     .select({
