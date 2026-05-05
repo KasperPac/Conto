@@ -1,7 +1,7 @@
 export interface LoadedRule {
   id: string;
   pattern: string;
-  matchField: string; // 'description_raw' | 'description_clean'
+  matchField: 'description_raw' | 'description_clean';
   categoryId: string | null;
   subcategoryId: string | null;
   priority: number;
