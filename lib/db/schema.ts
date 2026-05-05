@@ -93,6 +93,7 @@ export const merchants = pgTable('merchants', {
   canonicalName: text('canonical_name').notNull(),
   defaultCategoryId: uuid('default_category_id'),
   patterns: jsonb('patterns'),
+  isSubscription: boolean('is_subscription').notNull().default(false),
 });
 
 export const categories = pgTable('categories', {

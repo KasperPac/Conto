@@ -7,6 +7,7 @@ import {
   transactions,
   users,
   payslips,
+  merchants,
 } from '@/lib/db/schema';
 
 describe('cashflow runway schema', () => {
@@ -55,5 +56,9 @@ describe('cashflow runway schema', () => {
   it('extends payslips with cadence', () => {
     const cols = Object.keys(payslips);
     expect(cols).toEqual(expect.arrayContaining(['cadence']));
+  });
+
+  it('exposes merchants with isSubscription column', () => {
+    expect(merchants.isSubscription).toBeDefined();
   });
 });
