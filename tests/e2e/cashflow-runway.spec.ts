@@ -65,7 +65,7 @@ test.beforeAll(async ({ browser }) => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 1: upload → wait for parse
+// Test 1: upload → wait for parse → wait for job chain
 // ---------------------------------------------------------------------------
 test('upload NAB statement and wait for parse', async ({ page }) => {
   await signIn(page);
@@ -84,6 +84,13 @@ test('upload NAB statement and wait for parse', async ({ page }) => {
     await page.reload();
     await expect(page.getByText('parsed')).toBeVisible();
   }).toPass({ timeout: 30_000, intervals: [3_000] });
+
+  // Wait for the downstream job chain to complete:
+  //   parse-statement → refreshRecurrencesForUser → project-expected-events
+  // These run synchronously inside the parse-statement worker but the
+  // project-expected-events job is enqueued and processed asynchronously.
+  // Give the worker enough time to finish all downstream work.
+  await page.waitForTimeout(10_000);
 });
 
 // ---------------------------------------------------------------------------
@@ -108,46 +115,55 @@ test('/runway page renders chart and heading', async ({ page }) => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 3: /runway/calendar — renders, optionally snooze an event
+// Test 3: /runway/calendar — renders and snoozes an event cell
 // ---------------------------------------------------------------------------
 test('/runway/calendar renders; snoozes an event cell when one exists', async ({ page }) => {
   await signIn(page);
 
-  // Navigate to the current month's calendar
-  const now       = new Date();
-  const yearMonth = now.toISOString().slice(0, 7); // e.g. "2026-05"
-  await page.goto(`/runway/calendar?month=${yearMonth}`);
-  await page.waitForLoadState('networkidle');
+  // Navigate forward through up to 3 months to find a month with at least
+  // one projected event cell (class "cursor-pointer" on MonthGrid buttons).
+  // The job chain parse-statement → refreshRecurrencesForUser →
+  // project-expected-events projects events into future months, so the
+  // current month may be empty while a later month has events.
+  const now = new Date();
+  let yearMonth = now.toISOString().slice(0, 7); // e.g. "2026-05"
+  let hasCells = false;
 
-  // Heading must always render
-  await expect(page.getByRole('heading', { name: /bills calendar/i })).toBeVisible();
-
-  // Try to find an event cell that has at least one event label (non-empty)
-  // The MonthGrid renders clickable <button> cells; empty cells have class
-  // "cursor-default" and event cells have "cursor-pointer".
-  const eventCell = page.locator('button.cursor-pointer').first();
-  const hasCells  = await eventCell.isVisible().catch(() => false);
-
-  if (hasCells) {
-    await eventCell.click();
-
-    // EventDetailPanel should appear with at least one Snooze button
-    const snoozeBtn = page.getByRole('button', { name: /snooze/i }).first();
-    await expect(snoozeBtn).toBeVisible({ timeout: 5_000 });
-
-    await snoozeBtn.click();
-
-    // After snooze, the panel either closes or refreshes.
-    // The page should still be on /runway/calendar (server action may reload).
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.goto(`/runway/calendar?month=${yearMonth}`);
     await page.waitForLoadState('networkidle');
+
+    // Heading must always render
     await expect(page.getByRole('heading', { name: /bills calendar/i })).toBeVisible();
-  } else {
-    // No events found — navigate to next month and confirm the page still renders.
-    const nextMonthLink = page.getByText(/next/i).first();
-    await nextMonthLink.click();
-    await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: /bills calendar/i })).toBeVisible();
+
+    const eventCell = page.locator('button.cursor-pointer').first();
+    hasCells = await eventCell.isVisible().catch(() => false);
+    if (hasCells) break;
+
+    // Advance to next month via URL parameter
+    const [y, m] = yearMonth.split('-').map(Number);
+    const d = new Date(Date.UTC(y!, m! - 1, 1));
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    yearMonth = d.toISOString().slice(0, 7);
   }
+
+  // If no events were found after 3 months the recurrence job chain did not
+  // produce projected events — this is a test failure, not a soft skip.
+  expect(hasCells, 'Expected at least one calendar event cell after 3 months').toBe(true);
+
+  const eventCell = page.locator('button.cursor-pointer').first();
+  await eventCell.click();
+
+  // EventDetailPanel should appear with at least one Snooze button
+  const snoozeBtn = page.getByRole('button', { name: /snooze/i }).first();
+  await expect(snoozeBtn).toBeVisible({ timeout: 5_000 });
+
+  await snoozeBtn.click();
+
+  // After snooze, the panel either closes or refreshes.
+  // The page should still be on /runway/calendar (server action may reload).
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('heading', { name: /bills calendar/i })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -162,7 +178,7 @@ test('/runway still renders projection after calendar interaction', async ({ pag
 });
 
 // ---------------------------------------------------------------------------
-// Test 5: /runway/direct-debits — table row OR empty state
+// Test 5: /runway/direct-debits — page renders (table or empty state)
 // ---------------------------------------------------------------------------
 test('/runway/direct-debits renders table or empty state', async ({ page }) => {
   await signIn(page);
@@ -173,15 +189,24 @@ test('/runway/direct-debits renders table or empty state', async ({ page }) => {
     page.getByRole('heading', { name: /direct debits/i }),
   ).toBeVisible();
 
-  // Either the table has at least one data row, or the empty-state paragraph
-  // "No direct debits or recurring pulls detected yet." is shown.
+  // The NAB PDF fixture is a single-month credit card statement whose
+  // transactions are diverse one-off purchases (cafes, Uber, restaurants).
+  // detectRecurrence requires minOccurrences≥3 with a low interval stddev,
+  // so a single month of varied spending legitimately produces no recurrence
+  // groups. Asserting ≥1 row would make the test brittle against the fixture.
+  // Instead we verify the page renders correctly in whichever state applies.
+  //
+  // To assert ≥1 row here, replace the NAB PDF fixture with a multi-month
+  // statement that contains at least 3 occurrences of the same merchant
+  // (e.g. the synthetic CBA CSV at tests/fixtures/cashflow-runway/e2e/
+  // cba-anonymised.csv once a CBA CSV parser is added to lib/parsers/csv/).
   const tableRow   = page.locator('tbody tr').first();
   const emptyState = page.getByText(/no direct debits/i);
 
   const rowVisible   = await tableRow.isVisible().catch(() => false);
   const emptyVisible = await emptyState.isVisible().catch(() => false);
 
-  expect(rowVisible || emptyVisible).toBe(true);
+  expect(rowVisible || emptyVisible, 'Direct debits page should render').toBe(true);
 });
 
 // ---------------------------------------------------------------------------
