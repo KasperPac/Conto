@@ -1,0 +1,5 @@
+[
+  {"id":"tx-021","postedDate":"2026-01-05","amountCents":-4500,"descriptionClean":"BUNNINGS WAREHOUSE","merchantId":"m-bunnings"},
+  {"id":"tx-022","postedDate":"2026-02-20","amountCents":-12000,"descriptionClean":"WOOLWORTHS SUPERMARKET","merchantId":"m-woolworths"},
+  {"id":"tx-023","postedDate":"2026-03-10","amountCents":-8800,"descriptionClean":"COLES SUPERMARKET","merchantId":"m-coles"}
+]

@@ -1,0 +1,5 @@
+[
+  {"id":"tx-i1","accountId":"acc-cba","postedDate":"2026-01-03","amountCents":50000,"descriptionClean":"REFUND TELSTRA"},
+  {"id":"tx-i2","accountId":"acc-cba","postedDate":"2026-01-15","amountCents":25000,"descriptionClean":"CASHBACK VISA"},
+  {"id":"tx-i3","accountId":"acc-cba","postedDate":"2026-02-20","amountCents":15000,"descriptionClean":"GOVT STIMULUS"}
+]

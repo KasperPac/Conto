@@ -1,0 +1,5 @@
+[
+  {"id":"tx-001","postedDate":"2026-01-15","amountCents":-1599,"descriptionClean":"NETFLIX","merchantId":"m-netflix"},
+  {"id":"tx-002","postedDate":"2026-02-15","amountCents":-1599,"descriptionClean":"NETFLIX","merchantId":"m-netflix"},
+  {"id":"tx-003","postedDate":"2026-03-15","amountCents":-1599,"descriptionClean":"NETFLIX","merchantId":"m-netflix"}
+]
