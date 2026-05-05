@@ -2,6 +2,7 @@ import type { PgBoss } from 'pg-boss';
 import { registerParseStatement } from './parse-statement';
 import { registerDetectTransfers } from './detect-transfers';
 import { projectExpectedEvents } from './project-expected-events';
+import { matchExpectedEventsForTransaction } from './match-expected-events';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 
@@ -19,5 +20,10 @@ export async function registerHandlers(boss: PgBoss): Promise<void> {
     for (const { id } of ids) {
       await boss.send('project-expected-events', { userId: id });
     }
+  });
+
+  await boss.work('match-expected-events', async (job) => {
+    const { transactionId } = job.data as { transactionId: string };
+    return matchExpectedEventsForTransaction(transactionId);
   });
 }
