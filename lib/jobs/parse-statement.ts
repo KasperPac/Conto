@@ -4,6 +4,8 @@ import { dispatch, UnknownFormatError } from '@/lib/parsers/pdf/index';
 import { createStatement, updateStatement } from '@/lib/db/queries/statements';
 import { findOrCreateAccount } from '@/lib/db/queries/accounts';
 import { bulkInsertTransactions } from '@/lib/db/queries/transactions';
+import { getUserRules } from '@/lib/db/queries/rules';
+import { getUserMerchants } from '@/lib/db/queries/merchants';
 import { refreshRecurrencesForUser } from '@/lib/jobs/refresh-recurrences';
 
 interface Payload {
@@ -45,7 +47,12 @@ export async function registerParseStatement(boss: PgBoss): Promise<void> {
           status: 'parsing',
         });
 
-        await bulkInsertTransactions(userId, accountId, statementId, parsed.rows);
+        const [rulesList, merchantsList] = await Promise.all([
+          getUserRules(userId),
+          getUserMerchants(userId),
+        ]);
+
+        await bulkInsertTransactions(userId, accountId, statementId, parsed.rows, rulesList, merchantsList);
 
         await updateStatement(userId, statementId, {
           status: 'parsed',

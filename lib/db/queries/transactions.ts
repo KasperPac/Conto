@@ -3,26 +3,41 @@ import { alias } from 'drizzle-orm/pg-core';
 import { withUser } from '@/lib/db/client';
 import { transactionLinks, transactions, categories } from '@/lib/db/schema';
 import type { ParsedRow } from '@/lib/parsers/pdf/types';
+import { classifyTransaction } from '@/lib/domain/classification';
+import type { LoadedRule, LoadedMerchant } from '@/lib/domain/classification';
 
 export async function bulkInsertTransactions(
   userId: string,
   accountId: string,
-  statementId: string,
+  statementId: string | null,
   rows: ParsedRow[],
+  userRules: LoadedRule[] = [],
+  merchantList: LoadedMerchant[] = [],
 ): Promise<number> {
   if (rows.length === 0) return 0;
   return withUser(userId, async (tx) => {
-    const values = rows.map(r => ({
-      userId,
-      accountId,
-      statementId,
-      postedDate: r.posted_date,
-      descriptionRaw: r.description_raw,
-      descriptionClean: r.description_raw.toLowerCase().replace(/\s+/g, ' ').trim(),
-      amountCents: r.amount_cents,
-      balanceAfterCents: r.balance_after_cents ?? null,
-      classificationSource: 'unclassified' as const,
-    }));
+    const values = rows.map(r => {
+      const descriptionClean = r.description_raw.toLowerCase().replace(/\s+/g, ' ').trim();
+      const classification = classifyTransaction(
+        { descriptionRaw: r.description_raw, descriptionClean, merchantId: null },
+        userRules,
+        merchantList,
+      );
+      return {
+        userId,
+        accountId,
+        statementId,
+        postedDate: r.posted_date,
+        descriptionRaw: r.description_raw,
+        descriptionClean,
+        amountCents: r.amount_cents,
+        balanceAfterCents: r.balance_after_cents ?? null,
+        categoryId: classification.categoryId ?? undefined,
+        merchantId: classification.merchantId ?? undefined,
+        classificationSource: classification.source,
+        classificationRuleId: classification.ruleId ?? undefined,
+      };
+    });
 
     const result = await tx.insert(transactions)
       .values(values)
