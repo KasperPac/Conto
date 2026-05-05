@@ -51,3 +51,6 @@ drizzle/.cache/
 # Misc
 *.pem
 .turbo/
+
+# Superpowers brainstorming sessions
+.superpowers/
