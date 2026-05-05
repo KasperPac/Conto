@@ -1,9 +1,10 @@
-import { and, desc, eq, inArray, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { withUser } from '@/lib/db/client';
 import { transactionLinks, transactions, accounts } from '@/lib/db/schema';
 import type { TxWithAccount } from '@/lib/domain/transfers';
 import { toCents } from '@/lib/types/money';
+import type { Cents } from '@/lib/types/money';
 
 export interface LinkRow {
   id: string;
@@ -13,37 +14,24 @@ export interface LinkRow {
   fromTxId: string;
   fromDate: string;
   fromDesc: string;
-  fromAmountCents: bigint;
+  fromAmountCents: Cents;
   fromAccountName: string;
-  toTxId: string;
-  toDate: string;
-  toDesc: string;
-  toAmountCents: bigint;
-  toAccountName: string;
+  toTxId: string | null;
+  toDate: string | null;
+  toDesc: string | null;
+  toAmountCents: Cents | null;
+  toAccountName: string | null;
 }
 
 export async function getUnlinkedTransactions(userId: string): Promise<TxWithAccount[]> {
   return withUser(userId, async (tx) => {
-    const fromRows = await tx
-      .select({ id: transactionLinks.fromTransactionId })
-      .from(transactionLinks)
-      .where(eq(transactionLinks.userId, userId));
-
-    const toRows = await tx
-      .select({ id: transactionLinks.toTransactionId })
-      .from(transactionLinks)
-      .where(and(
-        eq(transactionLinks.userId, userId),
-        sql`${transactionLinks.toTransactionId} is not null`,
-      ));
-
-    const linkedIds = [
-      ...fromRows.map(r => r.id),
-      ...toRows.map(r => r.id!),
-    ];
-
-    const conditions = [eq(transactions.userId, userId)];
-    if (linkedIds.length > 0) conditions.push(notInArray(transactions.id, linkedIds));
+    // Single query: exclude any transaction that appears on either leg of a link,
+    // using a UNION subquery instead of 3 round-trips + an unbounded IN list.
+    const linkedSub = sql<string>`(
+      SELECT from_transaction_id FROM transaction_links WHERE user_id = ${userId}
+      UNION
+      SELECT to_transaction_id FROM transaction_links WHERE user_id = ${userId} AND to_transaction_id IS NOT NULL
+    )`;
 
     const rows = await tx
       .select({
@@ -56,7 +44,10 @@ export async function getUnlinkedTransactions(userId: string): Promise<TxWithAcc
       })
       .from(transactions)
       .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-      .where(and(...conditions));
+      .where(and(
+        eq(transactions.userId, userId),
+        sql`${transactions.id} NOT IN ${linkedSub}`,
+      ));
 
     return rows.map(r => ({
       ...r,
@@ -92,9 +83,9 @@ async function fetchLinkRows(userId: string, sourceFilter: string[]): Promise<Li
       })
       .from(transactionLinks)
       .innerJoin(fromTx,  eq(transactionLinks.fromTransactionId, fromTx.id))
-      .innerJoin(toTx,    eq(transactionLinks.toTransactionId,   toTx.id))
+      .leftJoin(toTx,    eq(transactionLinks.toTransactionId,   toTx.id))
       .innerJoin(fromAcc, eq(fromTx.accountId,  fromAcc.id))
-      .innerJoin(toAcc,   eq(toTx.accountId,    toAcc.id))
+      .leftJoin(toAcc,   eq(toTx.accountId,    toAcc.id))
       .where(and(
         eq(transactionLinks.userId, userId),
         inArray(transactionLinks.source, sourceFilter),
@@ -103,11 +94,8 @@ async function fetchLinkRows(userId: string, sourceFilter: string[]): Promise<Li
 
     return rows.map(r => ({
       ...r,
-      toTxId:        r.toTxId!,
-      toDate:        r.toDate!,
-      toDesc:        r.toDesc!,
-      toAmountCents: r.toAmountCents!,
-      toAccountName: r.toAccountName!,
+      fromAmountCents: toCents(r.fromAmountCents),
+      toAmountCents: r.toAmountCents != null ? toCents(r.toAmountCents) : null,
     }));
   });
 }

@@ -56,7 +56,8 @@ export async function getTransactions(userId: string, accountId: string, filter:
     if (filter.direction === 'debit')  conditions.push(sql`${transactions.amountCents} < 0`);
     if (filter.direction === 'credit') conditions.push(sql`${transactions.amountCents} > 0`);
 
-    // Join transaction_links on either leg to surface link type for excluded rows
+    // LEFT JOIN both legs of transaction_links. Assumes a transaction appears on at most
+    // one link per direction (enforced by application logic — no unique index on the legs).
     const fl = alias(transactionLinks, 'fl');
     const tl = alias(transactionLinks, 'tl');
 
