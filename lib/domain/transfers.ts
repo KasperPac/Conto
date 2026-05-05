@@ -14,7 +14,7 @@ export interface TransferCandidate {
   confidence: number;
 }
 
-const TRANSFER_WORDS = /\b(transfer|tfr|xfer)\b/i;
+const TRANSFER_WORDS = /\b(transfer|tfr|xfer|payment)\b/i;
 const ACCOUNT_FRAGMENT = /\d{4,}/;
 
 function daysDiff(a: string, b: string): number {

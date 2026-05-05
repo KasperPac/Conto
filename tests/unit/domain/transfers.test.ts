@@ -43,8 +43,8 @@ describe('detectTransfers', () => {
 
   it('boosts confidence when description contains "transfer"', () => {
     const plain = detectTransfers([
-      base({ id: 'from', accountId: 'acc-a', amountCents: BigInt(-5000), descriptionRaw: 'Payment' }),
-      base({ id: 'to', accountId: 'acc-b', accountType: 'savings', amountCents: BigInt(5000), descriptionRaw: 'Payment' }),
+      base({ id: 'from', accountId: 'acc-a', amountCents: BigInt(-5000), descriptionRaw: 'Salary credit' }),
+      base({ id: 'to', accountId: 'acc-b', accountType: 'savings', amountCents: BigInt(5000), descriptionRaw: 'Salary credit' }),
     ]);
     const boosted = detectTransfers([
       base({ id: 'from', accountId: 'acc-a', amountCents: BigInt(-5000), descriptionRaw: 'Transfer out' }),
@@ -92,10 +92,14 @@ describe('detectTransfers', () => {
   });
 
   it('discards candidates below 0.50 confidence', () => {
+    // The minimum confidence achievable under the current scoring formula is 0.60
+    // (base score alone), so the < 0.50 guard is a defensive lower bound.
+    // This test documents the intent; it cannot exercise the branch directly.
     const txs: TxWithAccount[] = [
       base({ id: 'from', accountId: 'acc-a', amountCents: BigInt(-5000) }),
-      base({ id: 'to', accountId: 'acc-b', accountType: 'savings', amountCents: BigInt(9999) }),
+      base({ id: 'to', accountId: 'acc-b', accountType: 'savings', amountCents: BigInt(4999) }),
     ];
+    // Mismatched amount → 0 candidates regardless of confidence
     expect(detectTransfers(txs)).toHaveLength(0);
   });
 });
