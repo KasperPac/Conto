@@ -8,7 +8,7 @@ const url = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL!.replace(/
 const pool = new Pool({ connectionString: url });
 export const testDb = drizzle(pool, { schema });
 
-const TABLES_IN_DEPENDENCY_ORDER = [
+const ALL_TABLES = [
   'expected_events', 'pay_cadences', 'recurrence_groups',
   'transaction_links', 'transactions',
   'subscriptions', 'goals', 'budgets', 'rules',
@@ -17,9 +17,8 @@ const TABLES_IN_DEPENDENCY_ORDER = [
 ];
 
 export async function resetTestDb(): Promise<void> {
-  for (const t of TABLES_IN_DEPENDENCY_ORDER) {
-    await testDb.execute(sql.raw(`truncate table "${t}" restart identity cascade`));
-  }
+  const list = ALL_TABLES.map(t => `"${t}"`).join(', ');
+  await testDb.execute(sql.raw(`truncate table ${list} restart identity cascade`));
 }
 
 export interface SeededUser {

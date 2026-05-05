@@ -11,7 +11,7 @@ export type Database = typeof db;
 
 export async function withUser<T>(userId: string, fn: (tx: Database) => Promise<T>): Promise<T> {
   return await db.transaction(async (tx) => {
-    await tx.execute(sql`set local app.user_id = ${userId}`);
+    await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
     return await fn(tx as unknown as Database);
   });
 }
