@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server';
 import { putObject } from '@/lib/storage/put-object';
+import { createStatement } from '@/lib/db/queries/statements';
 import { boss } from '@/lib/jobs/boss';
 
 export async function POST(req: Request): Promise<Response> {
@@ -42,14 +43,25 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: 'R2 upload failed', detail: String(err) }, { status: 502 });
   }
 
+  let statementId: string;
   try {
-    await boss.send('noop', { uploadedKey: key, userId, filename: file.name });
+    statementId = await createStatement(userId, {
+      sourceFilename: file.name,
+      sourceObjectKey: key,
+      format: 'pdf',
+    });
+  } catch (err) {
+    return NextResponse.json({ error: 'Failed to create statement record', detail: String(err) }, { status: 502 });
+  }
+
+  try {
+    await boss.send('parse-statement', { statementId, userId, sourceObjectKey: key });
   } catch (err) {
     return NextResponse.json({
       error: 'Upload succeeded but job enqueue failed',
-      key, detail: String(err),
+      statementId, detail: String(err),
     }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, key });
+  return NextResponse.json({ ok: true, statementId });
 }

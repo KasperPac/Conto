@@ -74,7 +74,7 @@ export const accounts = pgTable('accounts', {
 export const statements = pgTable('statements', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
-  accountId: uuid('account_id').notNull().references(() => accounts.id),
+  accountId: uuid('account_id').references(() => accounts.id),
   sourceFilename: text('source_filename').notNull(),
   sourceObjectKey: text('source_object_key').notNull(),
   format: text('format').notNull(),

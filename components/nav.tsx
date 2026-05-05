@@ -16,7 +16,10 @@ export function Nav({ userLabel }: { userLabel: string }) {
       <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="font-semibold">Conto</Link>
-          <Link href="/upload" className="text-sm text-zinc-700">Upload</Link>
+          <Link href="/statements" className="text-sm text-zinc-700 hover:text-zinc-900">Statements</Link>
+          <Link href="/accounts" className="text-sm text-zinc-700 hover:text-zinc-900">Accounts</Link>
+          <Link href="/categories" className="text-sm text-zinc-700 hover:text-zinc-900">Categories</Link>
+          <Link href="/upload" className="text-sm text-zinc-700 hover:text-zinc-900">Upload</Link>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-zinc-600">{userLabel}</span>

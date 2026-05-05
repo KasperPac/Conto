@@ -10,7 +10,10 @@ interface Args {
 }
 
 export async function putObject(args: Args): Promise<{ key: string }> {
-  const safeName = args.originalFilename.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 200);
+  const safeName = args.originalFilename
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/\.{2,}/g, '_')
+    .slice(0, 200);
   const key = `${args.userId}/${randomUUID()}/${safeName}`;
   await r2.send(new PutObjectCommand({
     Bucket: R2_BUCKET,
