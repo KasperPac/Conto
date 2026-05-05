@@ -13,7 +13,9 @@ export async function extractRows(buf: Buffer): Promise<TextRow[]> {
     const content = await page.getTextContent();
     for (const item of content.items) {
       if (!('str' in item) || !item.str.trim()) continue;
-      const [, , , , x, y] = item.transform as number[];
+      const transform = item.transform as number[];
+      const x = transform[4] ?? 0;
+      const y = transform[5] ?? 0;
       all.push({ text: item.str.trim(), x, y, page: p });
     }
   }
