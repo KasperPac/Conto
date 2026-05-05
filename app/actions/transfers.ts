@@ -32,10 +32,10 @@ export async function dismissTransferLink(linkId: string): Promise<void> {
 export async function createManualTransferLink(
   fromTxId: string,
   toTxId: string,
-  linkType: string,
+  linkType: 'transfer' | 'cc_payment',
 ): Promise<void> {
   const userId = await getUser();
-  await createManualLink(userId, fromTxId, toTxId, linkType as 'transfer' | 'cc_payment');
+  await createManualLink(userId, fromTxId, toTxId, linkType);
   revalidatePath('/transfers');
 }
 
