@@ -26,6 +26,7 @@ export function Nav({ userLabel, pendingSuggestions = 0 }: { userLabel: string; 
               </span>
             )}
           </Link>
+          <Link href="/runway" className="text-sm text-zinc-700 hover:text-zinc-900">Runway</Link>
           <Link href="/categories" className="text-sm text-zinc-700 hover:text-zinc-900">Categories</Link>
           <Link href="/upload" className="text-sm text-zinc-700 hover:text-zinc-900">Upload</Link>
         </div>
