@@ -67,6 +67,16 @@ describe('parseMyobPayslip', () => {
     const result = await parseMyobPayslip(buf);
     expect(result.salary_sacrifice_cents).toBe(0n);
   });
+
+  it('defaults pre_tax_deductions_cents to 0', async () => {
+    const result = await parseMyobPayslip(buf);
+    expect(result.pre_tax_deductions_cents).toBe(0n);
+  });
+
+  it('defaults post_tax_deductions_cents to 0', async () => {
+    const result = await parseMyobPayslip(buf);
+    expect(result.post_tax_deductions_cents).toBe(0n);
+  });
 });
 
 describe('dispatchPayslip', () => {
