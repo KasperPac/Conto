@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fyBounds, fyYear, currentFyYear, calYearBounds } from '@/lib/domain/fy';
+import { fyBounds, fyYear, calYearBounds } from '@/lib/domain/fy';
 
 describe('fyBounds', () => {
   it('returns Jul-Jun range for given FY year', () => {
