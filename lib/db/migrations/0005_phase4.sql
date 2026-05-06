@@ -5,9 +5,12 @@ create table wfh_entries (
   date date not null,
   hours numeric(4,2) not null check (hours > 0 and hours <= 24),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (user_id, date)
+  updated_at timestamptz not null default now()
 );
+
+alter table wfh_entries enable row level security;
+
+create unique index wfh_entries_user_date_idx on wfh_entries (user_id, date);
 
 alter table transactions
   add column if not exists receipt_filename text,

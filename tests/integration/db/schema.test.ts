@@ -57,7 +57,7 @@ describe('schema', () => {
   });
 
   it('RLS is enabled on domain tables', async () => {
-    const tables = ['accounts','transactions','recurrence_groups','expected_events'];
+    const tables = ['accounts','transactions','recurrence_groups','expected_events','wfh_entries'];
     const { rows } = await pool.query<{ tablename: string; rowsecurity: boolean }>(
       "select tablename, rowsecurity from pg_tables where schemaname = 'public' and tablename = any($1)",
       [tables],
@@ -70,6 +70,13 @@ describe('schema', () => {
   it('partial index expected_events_pending_idx exists', async () => {
     const { rows } = await pool.query(
       "select 1 from pg_indexes where indexname = 'expected_events_pending_idx'"
+    );
+    expect(rows.length).toBe(1);
+  });
+
+  it('unique index wfh_entries_user_date_idx exists', async () => {
+    const { rows } = await pool.query(
+      "select 1 from pg_indexes where indexname = 'wfh_entries_user_date_idx'"
     );
     expect(rows.length).toBe(1);
   });
