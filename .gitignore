@@ -54,3 +54,6 @@ drizzle/.cache/
 
 # Superpowers brainstorming sessions
 .superpowers/
+
+# Git worktrees
+.worktrees/
