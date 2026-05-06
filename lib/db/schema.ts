@@ -225,6 +225,8 @@ export const goals = pgTable('goals', {
   currentAmountCents: bigint('current_amount_cents', { mode: 'bigint' }).notNull().default(BigInt(0)),
   linkedAccountId: uuid('linked_account_id').references(() => accounts.id),
   status: text('status').notNull(),
+  goalType: text('goal_type').notNull().default('savings'),
+  weeklyCostCents: bigint('weekly_cost_cents', { mode: 'bigint' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -236,6 +238,7 @@ export const budgets = pgTable('budgets', {
   amountCents: bigint('amount_cents', { mode: 'bigint' }).notNull(),
   effectiveFrom: date('effective_from').notNull(),
   effectiveTo: date('effective_to'),
+  fromGoalId: uuid('from_goal_id').references(() => goals.id),
 });
 
 export const payCadences = pgTable('pay_cadences', {
