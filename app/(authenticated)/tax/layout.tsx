@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 const tabs = [
   { label: 'Super', href: '/tax/super' },
   { label: 'Donations', href: '/tax/donations' },
+  { label: 'Estimate', href: '/tax/estimate' },
 ]
 
 export default async function TaxLayout({ children }: { children: React.ReactNode }) {
