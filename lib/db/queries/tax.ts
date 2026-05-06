@@ -125,9 +125,9 @@ export async function getDonationData(
   })
 }
 
-export interface PayslipFySummary {
-  totalGrossCents: Cents
-  totalPaygCents: Cents
+export interface PayslipSummaryForFy {
+  fyGrossCents: Cents
+  fyPaygCents: Cents
   payslipCount: number
   earliestPayDate: string | null
   latestPayDate: string | null
@@ -137,7 +137,7 @@ export async function getPayslipSummaryForFy(
   userId: string,
   fyStart: string,
   fyEnd: string,
-): Promise<PayslipFySummary> {
+): Promise<PayslipSummaryForFy> {
   return withUser(userId, async (tx) => {
     const rows = await tx
       .select({
@@ -157,8 +157,8 @@ export async function getPayslipSummaryForFy(
 
     if (rows.length === 0) {
       return {
-        totalGrossCents: toCents(0n),
-        totalPaygCents: toCents(0n),
+        fyGrossCents: toCents(0n),
+        fyPaygCents: toCents(0n),
         payslipCount: 0,
         earliestPayDate: null,
         latestPayDate: null,
@@ -173,8 +173,8 @@ export async function getPayslipSummaryForFy(
     }
 
     return {
-      totalGrossCents: toCents(totalGross),
-      totalPaygCents: toCents(totalPayg),
+      fyGrossCents: toCents(totalGross),
+      fyPaygCents: toCents(totalPayg),
       payslipCount: rows.length,
       earliestPayDate: rows[0]!.payDate as string,
       latestPayDate: rows[rows.length - 1]!.payDate as string,
@@ -185,6 +185,7 @@ export async function getPayslipSummaryForFy(
 export interface DeductibleKindTotal {
   deductionKind: string
   totalCents: Cents
+  transactionCount: number
 }
 
 export interface DeductibleFyTotals {
@@ -208,6 +209,7 @@ export async function getDeductibleTotalsForFy(
       .where(
         and(
           eq(transactions.userId, userId),
+          eq(transactions.isExcludedFromSpending, false),
           eq(categories.isDeductibleCandidate, true),
           isNotNull(categories.deductionKind),
           sql`${transactions.postedDate}::date >= ${fyStart}::date`,
@@ -216,24 +218,23 @@ export async function getDeductibleTotalsForFy(
       )
 
     // Group by deductionKind in TypeScript
-    const kindMap = new Map<string, bigint>()
+    const kindMap = new Map<string, { total: bigint; count: number }>()
+    let grandTotal = 0n
     for (const row of rows) {
       const kind = row.deductionKind!
-      const abs = -row.amountCents  // spending is negative in DB; negate to get positive amount
-      kindMap.set(kind, (kindMap.get(kind) ?? 0n) + abs)
+      const abs = row.amountCents < 0n ? -row.amountCents : row.amountCents
+      const existing = kindMap.get(kind) ?? { total: 0n, count: 0 }
+      kindMap.set(kind, { total: existing.total + abs, count: existing.count + 1 })
+      grandTotal += abs
     }
 
     const byKind: DeductibleKindTotal[] = Array.from(kindMap.entries())
-      .map(([deductionKind, total]) => ({
+      .map(([deductionKind, v]) => ({
         deductionKind,
-        totalCents: toCents(total),
+        totalCents: toCents(v.total),
+        transactionCount: v.count,
       }))
       .sort((a, b) => (b.totalCents > a.totalCents ? 1 : b.totalCents < a.totalCents ? -1 : 0))
-
-    let grandTotal = 0n
-    for (const k of byKind) {
-      grandTotal += k.totalCents
-    }
 
     return {
       byKind,

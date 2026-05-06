@@ -182,8 +182,8 @@ describe('getPayslipSummaryForFy', () => {
 
   it('returns zero totals and null dates when no payslips', async () => {
     const result = await getPayslipSummaryForFy(userId, '2025-07-01', '2026-06-30')
-    expect(result.totalGrossCents).toBe(BigInt(0))
-    expect(result.totalPaygCents).toBe(BigInt(0))
+    expect(result.fyGrossCents).toBe(BigInt(0))
+    expect(result.fyPaygCents).toBe(BigInt(0))
     expect(result.payslipCount).toBe(0)
     expect(result.earliestPayDate).toBeNull()
     expect(result.latestPayDate).toBeNull()
@@ -221,8 +221,8 @@ describe('getPayslipSummaryForFy', () => {
 
     const result = await getPayslipSummaryForFy(userId, '2025-07-01', '2026-06-30')
     expect(result.payslipCount).toBe(2)
-    expect(result.totalGrossCents).toBe(BigInt(1700000))
-    expect(result.totalPaygCents).toBe(BigInt(380000))
+    expect(result.fyGrossCents).toBe(BigInt(1700000))
+    expect(result.fyPaygCents).toBe(BigInt(380000))
   })
 
   it('excludes payslips with payDate outside the FY range', async () => {
@@ -257,8 +257,8 @@ describe('getPayslipSummaryForFy', () => {
 
     const result = await getPayslipSummaryForFy(userId, '2025-07-01', '2026-06-30')
     expect(result.payslipCount).toBe(1)
-    expect(result.totalGrossCents).toBe(BigInt(500000))
-    expect(result.totalPaygCents).toBe(BigInt(100000))
+    expect(result.fyGrossCents).toBe(BigInt(500000))
+    expect(result.fyPaygCents).toBe(BigInt(100000))
   })
 
   it('returns correct earliestPayDate and latestPayDate', async () => {
