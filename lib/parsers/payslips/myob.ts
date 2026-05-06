@@ -18,7 +18,9 @@ export interface ParsedPayslip {
 }
 
 function dmyToIso(dmy: string): string {
-  const [d, m, y] = dmy.split('/');
+  const parts = dmy.split('/');
+  if (parts.length !== 3) throw new UnknownFormatError();
+  const [d, m, y] = parts;
   return `${y}-${m}-${d}`;
 }
 
@@ -32,6 +34,7 @@ function findAmount(rows: TextRow[], anchor: string): bigint | null {
   const row = rows.find(r => rowText(r).includes(anchor));
   if (!row) return null;
   const text = rowText(row);
+  // First match used; MYOB places the period amount before any YTD column in this fixture
   const m = text.match(/\$([\d,]+\.\d{2})/);
   if (!m) return null;
   return parseCents(m[1]!);
@@ -56,7 +59,7 @@ export async function parseMyobPayslip(buf: Buffer): Promise<ParsedPayslip> {
 
   // Employer: line immediately before "ABN:" row
   // pdfjs extracts: "Pac Technologies" then "ABN: 99113680443" on separate rows
-  const abnRowIdx = rows.findIndex(r => rowText(r).startsWith('ABN:'));
+  const abnRowIdx = rows.findIndex(r => rowText(r).includes('ABN:'));
   const employer =
     abnRowIdx > 0 ? rowText(rows[abnRowIdx - 1]!) : 'Unknown';
 
@@ -83,6 +86,7 @@ export async function parseMyobPayslip(buf: Buffer): Promise<ParsedPayslip> {
     tax_withheld_cents: taxWithheldCents,
     net_cents: netCents,
     super_cents: superCents,
+    // Not present in this payslip format — default to zero
     salary_sacrifice_cents: 0n,
     pre_tax_deductions_cents: 0n,
     post_tax_deductions_cents: 0n,
