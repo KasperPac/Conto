@@ -1,4 +1,4 @@
-import { and, between, eq, sql } from 'drizzle-orm';
+import { and, eq, lt, lte, gte, sql } from 'drizzle-orm';
 import { withUser } from '@/lib/db/client';
 import { wfhEntries } from '@/lib/db/schema';
 
@@ -32,12 +32,15 @@ export async function deleteWfhEntry(userId: string, date: string): Promise<void
 }
 
 export async function getWfhEntriesByMonth(userId: string, year: number, month: number): Promise<WfhEntry[]> {
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const end   = `${year}-${String(month).padStart(2, '0')}-31`;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const start = `${year}-${pad(month)}-01`;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const startOfNext = `${nextYear}-${pad(nextMonth)}-01`;
   return withUser(userId, async (tx) => {
     return tx.select({ id: wfhEntries.id, date: wfhEntries.date, hours: wfhEntries.hours })
       .from(wfhEntries)
-      .where(and(eq(wfhEntries.userId, userId), between(wfhEntries.date, start, end)))
+      .where(and(eq(wfhEntries.userId, userId), gte(wfhEntries.date, start), lt(wfhEntries.date, startOfNext)))
       .orderBy(wfhEntries.date);
   });
 }
@@ -50,7 +53,7 @@ export async function getWfhSummaryByFY(userId: string, fyStart: string, fyEnd: 
         hours: sql<string>`sum(${wfhEntries.hours})::text`,
       })
       .from(wfhEntries)
-      .where(and(eq(wfhEntries.userId, userId), between(wfhEntries.date, fyStart, fyEnd)))
+      .where(and(eq(wfhEntries.userId, userId), gte(wfhEntries.date, fyStart), lte(wfhEntries.date, fyEnd)))
       .groupBy(sql`to_char(${wfhEntries.date}, 'YYYY-MM')`)
       .orderBy(sql`to_char(${wfhEntries.date}, 'YYYY-MM')`);
 
