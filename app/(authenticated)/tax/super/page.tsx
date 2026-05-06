@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server'
 import { getSuperCapData } from '@/lib/db/queries/tax'
@@ -36,6 +37,7 @@ export default async function SuperPage() {
   const fyEnd = new Date(fy.end)
   const today = new Date()
   const msPerWeek = 7 * 24 * 60 * 60 * 1000
+  // Math.max(1, ...) prevents division by zero; projection may over-extrapolate in the first few weeks of a FY
   const weeksElapsed = Math.max(1, Math.floor((today.getTime() - fyStart.getTime()) / msPerWeek))
   const totalWeeks = Math.ceil((fyEnd.getTime() - fyStart.getTime()) / msPerWeek)
   const weeklyAvg = totalContributed / BigInt(weeksElapsed)
@@ -86,7 +88,7 @@ export default async function SuperPage() {
       {data.rows.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
           No payslips found for FY {label}. Upload payslips on the{' '}
-          <a href="/income" className="underline">Income page</a> to track your super contributions.
+          <Link href="/income" className="underline">Income page</Link> to track your super contributions.
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border">
