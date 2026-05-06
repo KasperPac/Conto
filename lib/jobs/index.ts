@@ -1,6 +1,7 @@
 import type { PgBoss } from 'pg-boss';
 import { registerParseStatement } from './parse-statement';
 import { registerDetectTransfers } from './detect-transfers';
+import { registerLinkPayslips } from './link-payslips';
 import { projectExpectedEvents } from './project-expected-events';
 import { matchExpectedEventsForTransaction } from './match-expected-events';
 import { db } from '@/lib/db/client';
@@ -9,6 +10,7 @@ import { users } from '@/lib/db/schema';
 export async function registerHandlers(boss: PgBoss): Promise<void> {
   await registerParseStatement(boss);
   await registerDetectTransfers(boss);
+  await registerLinkPayslips(boss);
 
   await boss.createQueue('project-expected-events').catch(() => {});
   await boss.work('project-expected-events', async (job) => {
