@@ -69,6 +69,14 @@ export async function getAccountsWithBalance(userId: string) {
   });
 }
 
+export async function getAccounts(userId: string) {
+  return withUser(userId, async (tx) => {
+    return tx.select({ id: accounts.id, name: accounts.name, institution: accounts.institution })
+      .from(accounts)
+      .where(and(eq(accounts.userId, userId), eq(accounts.isActive, true)));
+  });
+}
+
 export async function renameAccount(userId: string, accountId: string, name: string): Promise<void> {
   await withUser(userId, async (tx) => {
     await tx.update(accounts).set({ name }).where(and(
