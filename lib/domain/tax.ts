@@ -74,7 +74,7 @@ function calculateTaxLiability(taxableIncomeCents: bigint): bigint {
 
   // Simplified: no shade-in zone ($26k–$32.5k). ATO phases in at 10c/dollar in that range.
   // Calculate Medicare levy (2% above $26,000)
-  const medicareLevi =
+  const medicareLevy =
     taxableIncomeCents > MEDICARE_THRESHOLD_CENTS
       ? (taxableIncomeCents * MEDICARE_RATE_PER_10000) / 10000n
       : 0n;
@@ -94,7 +94,7 @@ function calculateTaxLiability(taxableIncomeCents: bigint): bigint {
   }
 
   // Tax liability = tax + medicare - LITO, floored at 0
-  const liability = bracketTax + medicareLevi - lito;
+  const liability = bracketTax + medicareLevy - lito;
   return liability < 0n ? 0n : liability;
 }
 

@@ -6,19 +6,26 @@ export function PayslipUploadButton() {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function handleFile(file: File) {
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg('File too large — maximum 10 MB')
+      return
+    }
+    setErrorMsg(null)
     setUploading(true)
     try {
       const fd = new FormData()
       fd.append('file', file)
       const res = await fetch('/api/payslips/upload', { method: 'POST', body: fd })
       if (res.ok) {
+        setErrorMsg(null)
         router.refresh()
       } else if (res.status === 422) {
-        alert('Unrecognised payslip format — only MYOB PDFs are supported')
+        setErrorMsg('Unrecognised payslip format — only MYOB PDFs are supported')
       } else {
-        alert('Upload failed')
+        setErrorMsg('Upload failed')
       }
     } finally {
       setUploading(false)
@@ -27,7 +34,7 @@ export function PayslipUploadButton() {
   }
 
   return (
-    <>
+    <div>
       <input
         ref={inputRef}
         type="file"
@@ -43,6 +50,9 @@ export function PayslipUploadButton() {
       >
         {uploading ? 'Uploading…' : 'Upload PDF'}
       </button>
-    </>
+      {errorMsg && (
+        <p className="mt-2 text-sm text-red-600">{errorMsg}</p>
+      )}
+    </div>
   )
 }
