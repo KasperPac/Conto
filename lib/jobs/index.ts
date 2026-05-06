@@ -4,6 +4,7 @@ import { registerDetectTransfers } from './detect-transfers';
 import { registerLinkPayslips } from './link-payslips';
 import { projectExpectedEvents } from './project-expected-events';
 import { matchExpectedEventsForTransaction } from './match-expected-events';
+import { registerTaxObligations } from './tax-obligations';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 
@@ -34,4 +35,6 @@ export async function registerHandlers(boss: PgBoss): Promise<void> {
       await matchExpectedEventsForTransaction(job.data.transactionId);
     }
   });
+
+  await registerTaxObligations(boss);
 }
