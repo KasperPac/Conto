@@ -26,7 +26,7 @@ export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
   return withUser(userId, async (tx) => {
     // Get latest income link per payslip (subquery)
     const linkSub = tx
-      .select({
+      .selectDistinctOn([transactionLinks.payslipId], {
         payslipId: transactionLinks.payslipId,
         id: transactionLinks.id,
         source: transactionLinks.source,
@@ -41,6 +41,7 @@ export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
         eq(transactionLinks.linkType, 'income'),
         isNotNull(transactionLinks.payslipId),
       ))
+      .orderBy(transactionLinks.payslipId, desc(transactionLinks.createdAt))
       .as('link_sub');
 
     const rows = await tx
