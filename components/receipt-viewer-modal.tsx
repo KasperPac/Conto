@@ -1,4 +1,5 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { deleteReceipt } from '@/app/actions/receipts';
 
@@ -12,10 +13,12 @@ interface Props {
 
 export function ReceiptViewerModal({ transactionId, signedUrl, filename, contentType, onClose }: Props) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleDelete() {
     startTransition(async () => {
       await deleteReceipt(transactionId);
+      router.refresh();
       onClose();
     });
   }

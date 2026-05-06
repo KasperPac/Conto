@@ -26,6 +26,7 @@ export async function POST(req: Request): Promise<Response> {
   if (!(file instanceof File)) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   if (typeof transactionId !== 'string' || !transactionId) return NextResponse.json({ error: 'transactionId required' }, { status: 400 });
   if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: `Unsupported content type: ${file.type}` }, { status: 400 });
+  if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: 'File must be under 10 MB' }, { status: 400 });
 
   // Verify transaction ownership
   const [tx] = await withUser(userId, db =>
