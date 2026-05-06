@@ -26,8 +26,8 @@ describe('calYearBounds', () => {
 });
 
 describe('currentFyYear', () => {
-  it('returns correct FY for today (2026-05-06 -> 2026)', () => {
-    // This test assumes today is 2026-05-06 (May 6, 2026), which is in FY2026 (Jul 2025 - Jun 2026)
-    expect(currentFyYear()).toBe(2026);
+  it('delegates to fyYear with today', () => {
+    // currentFyYear() just wraps fyYear(new Date()) — test it matches
+    expect(currentFyYear()).toBe(fyYear(new Date()));
   });
 });

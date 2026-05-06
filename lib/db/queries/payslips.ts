@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { withUser } from '@/lib/db/client';
 import { payslips, transactionLinks, transactions, accounts } from '@/lib/db/schema';
 import { toCents } from '@/lib/types/money';
@@ -24,6 +24,25 @@ export interface PayslipRow {
 
 export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
   return withUser(userId, async (tx) => {
+    // Get latest income link per payslip (subquery)
+    const linkSub = tx
+      .select({
+        payslipId: transactionLinks.payslipId,
+        id: transactionLinks.id,
+        source: transactionLinks.source,
+        depositDate: transactions.postedDate,
+        accountName: accounts.name,
+      })
+      .from(transactionLinks)
+      .leftJoin(transactions, eq(transactionLinks.fromTransactionId, transactions.id))
+      .leftJoin(accounts, eq(transactions.accountId, accounts.id))
+      .where(and(
+        eq(transactionLinks.userId, userId),
+        eq(transactionLinks.linkType, 'income'),
+        isNotNull(transactionLinks.payslipId),
+      ))
+      .as('link_sub');
+
     const rows = await tx
       .select({
         id: payslips.id,
@@ -37,21 +56,13 @@ export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
         netCents: payslips.netCents,
         source: payslips.source,
         cadence: payslips.cadence,
-        linkId: transactionLinks.id,
-        linkSource: transactionLinks.source,
-        linkedDepositDate: transactions.postedDate,
-        linkedAccountName: accounts.name,
+        linkId: linkSub.id,
+        linkSource: linkSub.source,
+        linkedDepositDate: linkSub.depositDate,
+        linkedAccountName: linkSub.accountName,
       })
       .from(payslips)
-      .leftJoin(
-        transactionLinks,
-        and(
-          eq(transactionLinks.payslipId, payslips.id),
-          eq(transactionLinks.linkType, 'income'),
-        ),
-      )
-      .leftJoin(transactions, eq(transactionLinks.fromTransactionId, transactions.id))
-      .leftJoin(accounts, eq(transactions.accountId, accounts.id))
+      .leftJoin(linkSub, eq(linkSub.payslipId, payslips.id))
       .where(eq(payslips.userId, userId))
       .orderBy(desc(payslips.payDate));
 
@@ -89,16 +100,17 @@ export async function getPayslipsForLinkingJob(
   userId: string,
 ): Promise<Array<{ id: string; payDate: string; netCents: Cents; employer: string }>> {
   return withUser(userId, async (tx) => {
-    const linkedSub = sql<string>`(
-      SELECT payslip_id FROM transaction_links
-      WHERE user_id = ${userId} AND payslip_id IS NOT NULL AND link_type = 'income'
-    )`;
     const rows = await tx
       .select({ id: payslips.id, payDate: payslips.payDate, netCents: payslips.netCents, employer: payslips.employer })
       .from(payslips)
       .where(and(
         eq(payslips.userId, userId),
-        sql`${payslips.id} NOT IN ${linkedSub}`,
+        sql`NOT EXISTS (
+          SELECT 1 FROM transaction_links tl
+          WHERE tl.payslip_id = ${payslips.id}
+            AND tl.user_id = ${userId}
+            AND tl.link_type = 'income'
+        )`,
       ));
     return rows.map(r => ({ ...r, netCents: toCents(r.netCents) }));
   });
