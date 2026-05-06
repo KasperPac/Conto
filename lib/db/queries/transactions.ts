@@ -55,6 +55,7 @@ export interface TxFilter {
   search?: string;
   direction?: 'debit' | 'credit';
   limit?: number;
+  deductibleOnly?: boolean;
 }
 
 export async function getTransactions(userId: string, accountId: string, filter: TxFilter = {}) {
@@ -70,6 +71,7 @@ export async function getTransactions(userId: string, accountId: string, filter:
     if (filter.search)     conditions.push(ilike(transactions.descriptionRaw, `%${filter.search}%`));
     if (filter.direction === 'debit')  conditions.push(sql`${transactions.amountCents} < 0`);
     if (filter.direction === 'credit') conditions.push(sql`${transactions.amountCents} > 0`);
+    if (filter.deductibleOnly)         conditions.push(eq(categories.isDeductibleCandidate, true));
 
     // LEFT JOIN both legs of transaction_links. Assumes a transaction appears on at most
     // one link per direction (enforced by application logic — no unique index on the legs).

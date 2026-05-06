@@ -43,6 +43,7 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
     search: sp['search'],
     direction: sp['dir'] as 'debit' | 'credit' | undefined,
     limit: 50,
+    deductibleOnly: sp['deductible'] === '1',
   };
 
   const [rows, allAccounts, allCategories] = await Promise.all([
@@ -87,6 +88,16 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
         </select>
         <button type="submit" className="border rounded px-3 py-1 bg-zinc-100 hover:bg-zinc-200">Filter</button>
         <Link href={`/accounts/${id}/transactions`} className="border rounded px-3 py-1 text-zinc-500 hover:bg-zinc-50">Clear</Link>
+        <Link
+          href={buildUrl(sp['deductible'] === '1' ? { deductible: '' } : { deductible: '1' })}
+          className={`border rounded px-3 py-1 text-sm ${
+            sp['deductible'] === '1'
+              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+              : 'text-zinc-600 hover:bg-zinc-50'
+          }`}
+        >
+          Deductible only
+        </Link>
       </form>
 
       {displayRows.length === 0 ? (
