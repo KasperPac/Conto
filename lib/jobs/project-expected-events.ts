@@ -50,6 +50,7 @@ export async function projectExpectedEvents(
     const [primary] = await tx.select().from(accounts).where(
       and(eq(accounts.userId, userId), eq(accounts.type, 'checking'), eq(accounts.isActive, true)),
     ).limit(1);
+    if (!primary) return { inserted: 0, deleted: deleted.length };
 
     for (const g of groups) {
       let date = g.nextExpectedDate as string;
@@ -57,7 +58,7 @@ export async function projectExpectedEvents(
         if (!skipKey.has(`${g.id}::${date}`)) {
           rows.push({
             userId,
-            accountId: primary?.id,
+            accountId: primary.id,
             source: 'recurrence_group',
             sourceId: g.id,
             expectedDate: date,

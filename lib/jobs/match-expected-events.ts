@@ -56,7 +56,7 @@ export async function matchExpectedEventsForTransaction(
       return a.id < b.id ? -1 : 1;
     });
 
-    const winner = usable[0];
+    const winner = usable[0]!;
     await tx.update(expectedEvents)
       .set({ status: 'matched', matchedTransactionId: t.id })
       .where(eq(expectedEvents.id, winner.id));

@@ -13,9 +13,11 @@ export async function registerHandlers(boss: PgBoss): Promise<void> {
   await registerLinkPayslips(boss);
 
   await boss.createQueue('project-expected-events').catch(() => {});
-  await boss.work('project-expected-events', async (job) => {
-    const { userId, horizonDays } = job.data as { userId: string; horizonDays?: number };
-    return projectExpectedEvents(userId, horizonDays ?? 90);
+  await boss.work('project-expected-events', async (jobs) => {
+    for (const job of jobs as { data: { userId: string; horizonDays?: number } }[]) {
+      const { userId, horizonDays } = job.data;
+      await projectExpectedEvents(userId, horizonDays ?? 90);
+    }
   });
 
   await boss.createQueue('project-expected-events-fanout').catch(() => {});
@@ -27,8 +29,9 @@ export async function registerHandlers(boss: PgBoss): Promise<void> {
   });
 
   await boss.createQueue('match-expected-events').catch(() => {});
-  await boss.work('match-expected-events', async (job) => {
-    const { transactionId } = job.data as { transactionId: string };
-    return matchExpectedEventsForTransaction(transactionId);
+  await boss.work('match-expected-events', async (jobs) => {
+    for (const job of jobs as { data: { transactionId: string } }[]) {
+      await matchExpectedEventsForTransaction(job.data.transactionId);
+    }
   });
 }

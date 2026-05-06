@@ -37,14 +37,14 @@ export function detectRecurrence(txs: InputTx[], opts: Options): DetectedRecurre
     const amountStddev = stddev(amounts);
 
     out.push({
-      descriptionPattern: sorted[0].descriptionClean,
-      merchantId: sorted[0].merchantId,
+      descriptionPattern: sorted[0]!.descriptionClean,
+      merchantId: sorted[0]!.merchantId,
       cadence: cadenceFromIntervalDays(medianInterval),
       medianAmountCents: BigInt(Math.round(medianAmount)) as unknown as Cents,
       amountStddevCents: BigInt(Math.round(amountStddev)) as unknown as Cents,
       medianIntervalDays: Math.round(medianInterval),
-      lastSeenDate: sorted[sorted.length - 1].postedDate,
-      nextExpectedDate: addDaysISO(sorted[sorted.length - 1].postedDate, Math.round(medianInterval)),
+      lastSeenDate: sorted[sorted.length - 1]!.postedDate,
+      nextExpectedDate: addDaysISO(sorted[sorted.length - 1]!.postedDate, Math.round(medianInterval)),
       confidence: clamp01(1 - intervalStddev / Math.max(medianInterval, 1)),
       memberTransactionIds: sorted.map(t => t.id),
     });

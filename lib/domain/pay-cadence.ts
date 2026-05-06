@@ -41,13 +41,13 @@ export function detectPayCadence(txs: InputCredit[], opts: Options): PayCadenceC
     const cadence = payCadenceFromInterval(medianInterval);
     if (!cadence) continue;
 
-    const [, employer] = key.split('|');
+    const [, employer = ''] = key.split('|');
     out.push({
-      accountId: sorted[0].accountId,
+      accountId: sorted[0]!.accountId,
       employer,
       cadence,
       expectedNetCents: BigInt(Math.round(meanAmt)) as unknown as Cents,
-      nextPayDate: addDaysISO(sorted[sorted.length - 1].postedDate, Math.round(medianInterval)),
+      nextPayDate: addDaysISO(sorted[sorted.length - 1]!.postedDate, Math.round(medianInterval)),
       confidence: clamp01(1 - sdAmt / Math.max(meanAmt, 1)),
       memberTransactionIds: sorted.map(t => t.id),
     });

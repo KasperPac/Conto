@@ -1,7 +1,7 @@
 export function pairwiseDays(dates: string[]): number[] {
   const out: number[] = [];
   for (let i = 1; i < dates.length; i++) {
-    out.push(daysBetween(dates[i - 1], dates[i]));
+    out.push(daysBetween(dates[i - 1]!, dates[i]!));
   }
   return out;
 }
@@ -21,7 +21,7 @@ export function addDaysISO(d: string, n: number): string {
 export function median(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
-  return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
+  return s.length % 2 === 0 ? (s[m - 1]! + s[m]!) / 2 : s[m]!;
 }
 
 export function stddev(xs: number[]): number {

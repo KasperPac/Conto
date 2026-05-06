@@ -19,7 +19,7 @@ export default function RunwayChart({ preview }: { preview: LiquidityPreview }) 
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" tick={{ fontSize: 11 }} />
         <YAxis tickFormatter={v => `$${(v/100).toFixed(0)}`} tick={{ fontSize: 11 }} />
-        <Tooltip formatter={(v: number) => `$${(v/100).toFixed(2)}`} />
+        <Tooltip formatter={(v: unknown) => `$${(Number(v)/100).toFixed(2)}`} />
         <Area type="monotone" dataKey="high" stroke="#93c5fd" fill="#eff6ff" fillOpacity={0.6} />
         <Area type="monotone" dataKey="low"  stroke="#93c5fd" fill="#ffffff" fillOpacity={1} />
         <Line type="monotone" dataKey="mid"  stroke="#2563eb" dot={false} strokeWidth={2} />
