@@ -60,6 +60,7 @@ describe('runLinkPayslips', () => {
     );
     expect(links).toHaveLength(1);
     expect(links[0]!.source).toBe('suggested');
+    expect(parseFloat(links[0]!.confidence ?? '0')).toBeLessThan(0.90);
   });
 
   it('skips payslips that already have an income link', async () => {

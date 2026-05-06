@@ -40,10 +40,10 @@ export async function runLinkPayslips(userId: string): Promise<void> {
       .where(and(eq(transactionLinks.userId, userId), eq(transactionLinks.linkType, 'income')));
 
     for (const payslip of unlinkedPayslips) {
-      // Window: payDate ±7 days
+      // Window: payDate ±3 days — matches matchPayslipToIncome's hard cut-off
       const payMs = new Date(payslip.payDate).getTime();
-      const windowStart = new Date(payMs - 7 * 86_400_000).toISOString().slice(0, 10);
-      const windowEnd   = new Date(payMs + 7 * 86_400_000).toISOString().slice(0, 10);
+      const windowStart = new Date(payMs - 3 * 86_400_000).toISOString().slice(0, 10);
+      const windowEnd   = new Date(payMs + 3 * 86_400_000).toISOString().slice(0, 10);
 
       const candidateRows = await tx
         .select({
@@ -74,6 +74,8 @@ export async function runLinkPayslips(userId: string): Promise<void> {
       // e.g. 0.70 + 0.20 = 0.8999999999999999 < 0.90, but rounds to 0.900
       const storedConfidence = best.confidence.toFixed(3);
       const roundedConfidence = parseFloat(storedConfidence);
+      // getPayslipsForLinkingJob already excludes payslips with existing income links;
+      // no unique DB constraint covers (payslip_id, link_type='income') yet
       await tx.insert(transactionLinks).values({
         userId,
         linkType: 'income',
@@ -82,7 +84,7 @@ export async function runLinkPayslips(userId: string): Promise<void> {
         payslipId: payslip.id,
         confidence: storedConfidence,
         source: roundedConfidence >= 0.90 ? 'auto' : 'suggested',
-      }).onConflictDoNothing();
+      });
     }
   });
 }
