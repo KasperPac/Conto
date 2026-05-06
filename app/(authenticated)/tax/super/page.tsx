@@ -27,7 +27,7 @@ export default async function SuperPage() {
   const label = fyLabel(fy.start)
 
   const totalContributed = data.totalSuperCents + data.totalSalarySacrificeCents
-  const remaining = CAP_CENTS - totalContributed
+  const headroom = CAP_CENTS - totalContributed
   const pct = totalContributed >= CAP_CENTS
     ? 100
     : Number((totalContributed * 100n) / CAP_CENTS)
@@ -55,7 +55,7 @@ export default async function SuperPage() {
         <div className="flex justify-between text-sm">
           <span className="font-medium">{fmt(totalContributed)} contributed</span>
           <span className="text-muted-foreground">
-            {remaining > 0n ? fmt(remaining) + ' remaining' : 'Cap reached'}
+            {headroom > 0n ? fmt(headroom) + ' remaining' : 'Cap reached'}
           </span>
         </div>
         <div className="h-3 rounded-full bg-zinc-100 overflow-hidden">
@@ -70,7 +70,7 @@ export default async function SuperPage() {
       </div>
 
       {/* Projection */}
-      {data.rows.length > 0 && (
+      {totalContributed > 0n && (
         <>
           {projected > CAP_CENTS ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
