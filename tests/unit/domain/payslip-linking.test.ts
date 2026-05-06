@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { matchPayslipToIncome } from '@/lib/domain/payslip-linking';
+import { toCents } from '@/lib/types/money';
 
-const payslip = { payDate: '2026-05-01', netCents: BigInt(423456), employer: 'Acme Corp' };
+const payslip = { payDate: '2026-05-01', netCents: toCents(BigInt(423456)), employer: 'Acme Corp' };
 
-const baseTx = (overrides: Partial<{ id: string; postedDate: string; amountCents: bigint; descriptionRaw: string }> = {}) => ({
+const baseTx = (overrides: Partial<{ id: string; postedDate: string; amountCents: ReturnType<typeof toCents>; descriptionRaw: string }> = {}) => ({
   id: 'tx-1',
   postedDate: '2026-05-01',
-  amountCents: BigInt(423456),
+  amountCents: toCents(BigInt(423456)),
   descriptionRaw: 'DEPOSIT',
   ...overrides,
 });
@@ -38,7 +39,7 @@ describe('matchPayslipToIncome', () => {
   });
 
   it('excludes transactions with wrong amount', () => {
-    const result = matchPayslipToIncome(payslip, [baseTx({ amountCents: BigInt(400000) })], []);
+    const result = matchPayslipToIncome(payslip, [baseTx({ amountCents: toCents(BigInt(400000)) })], []);
     expect(result).toHaveLength(0);
   });
 
@@ -48,7 +49,7 @@ describe('matchPayslipToIncome', () => {
   });
 
   it('excludes negative (debit) transactions', () => {
-    const result = matchPayslipToIncome(payslip, [baseTx({ amountCents: BigInt(-423456) })], []);
+    const result = matchPayslipToIncome(payslip, [baseTx({ amountCents: toCents(BigInt(-423456)) })], []);
     expect(result).toHaveLength(0);
   });
 

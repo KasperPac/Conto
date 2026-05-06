@@ -1,13 +1,15 @@
+import type { Cents } from '@/lib/types/money';
+
 export interface PayslipInput {
   payDate: string;
-  netCents: bigint;
+  netCents: Cents;
   employer: string;
 }
 
 export interface TransactionCandidate {
   id: string;
   postedDate: string;
-  amountCents: bigint;
+  amountCents: Cents;
   descriptionRaw: string;
 }
 
@@ -48,7 +50,7 @@ export function matchPayslipToIncome(
     }
 
     // Add 0.10 when pay cadence matches employer
-    if (payCadences.some(pc => pc.employer.toLowerCase().includes(employerWord))) {
+    if (employerWord && payCadences.some(pc => pc.employer.toLowerCase().includes(employerWord))) {
       confidence += 0.10;
     }
 
