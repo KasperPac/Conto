@@ -1,0 +1,47 @@
+{
+  "planPath": "Docs/superpowers/plans/2026-05-06-phase5-5-tax-sidekick.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 0: Migration — make expected_events.account_id nullable",
+      "status": "pending",
+      "description": "**Goal:** Allow `expected_events` rows with no account (tax obligation events are not account-specific).\n\n**Files:**\n- Create: `lib/db/migrations/0008_phase5_5_tax.sql`\n- Modify: `lib/db/schema.ts`\n\n**Acceptance Criteria:**\n- [ ] Migration runs without error on the dev database\n- [ ] `expected_events.account_id` accepts NULL\n- [ ] Drizzle schema matches (no `notNull()` on `accountId`)\n- [ ] Existing rows are unaffected\n\n**Verify:** `npx drizzle-kit push` → no errors\n\n```json:metadata\n{\"files\": [\"lib/db/migrations/0008_phase5_5_tax.sql\", \"lib/db/schema.ts\"], \"verifyCommand\": \"npx drizzle-kit push\", \"acceptanceCriteria\": [\"Migration runs without error\", \"expected_events.account_id accepts NULL\", \"Drizzle schema has no notNull() on accountId\", \"Existing rows unaffected\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 1: FY helpers + tax queries + tests",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** Pure FY date utilities and the two DB query functions (`getSuperCapData`, `getDonationData`) with integration tests.\n\n**Files:**\n- Create: `lib/utils/fy.ts`\n- Create: `lib/db/queries/tax.ts`\n- Create: `tests/unit/utils/fy.test.ts`\n- Create: `tests/integration/db/queries/tax.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `currentFY()` returns correct start/end for dates in July–June range\n- [ ] `currentFY()` handles 30 June and 1 July boundary correctly\n- [ ] `fyLabel` formats as \"2025–26\"\n- [ ] `getSuperCapData` returns rows ordered by payDate ascending with correct running totals\n- [ ] `getSuperCapData` excludes payslips outside the FY\n- [ ] `getDonationData` returns only transactions with `deductionKind = 'donation'`, amounts positive\n- [ ] `getDonationData` excludes transactions outside the FY\n- [ ] All integration tests pass\n\n**Verify:** `npx vitest run tests/unit/utils/fy.test.ts tests/integration/db/queries/tax.test.ts`\n\n```json:metadata\n{\"files\": [\"lib/utils/fy.ts\", \"lib/db/queries/tax.ts\", \"tests/unit/utils/fy.test.ts\", \"tests/integration/db/queries/tax.test.ts\"], \"verifyCommand\": \"npx vitest run tests/unit/utils/fy.test.ts tests/integration/db/queries/tax.test.ts\", \"acceptanceCriteria\": [\"currentFY() returns correct FY ranges\", \"fyLabel formats as 2025-26\", \"getSuperCapData returns ordered rows with running totals\", \"getDonationData returns only donation transactions with positive amounts\", \"All tests pass\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Tax obligation nightly job",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** pg-boss handler that inserts ATO tax due dates into `expected_events` for all users on a rolling 18-month window, registered in the jobs index.\n\n**Files:**\n- Create: `lib/jobs/tax-obligations.ts`\n- Modify: `lib/jobs/index.ts`\n\n**Acceptance Criteria:**\n- [ ] Job inserts the 6 annual tax events for each user for dates within the next 18 months\n- [ ] Re-running the job is idempotent (deletes pending future events first, then re-inserts)\n- [ ] Snoozed/dismissed events survive re-materialisation\n- [ ] `account_id` is null on inserted rows\n- [ ] TypeScript compiles clean\n\n**Verify:** `npx tsc --noEmit 2>&1 | grep -v get-signed-url`\n\n```json:metadata\n{\"files\": [\"lib/jobs/tax-obligations.ts\", \"lib/jobs/index.ts\"], \"verifyCommand\": \"npx tsc --noEmit 2>&1 | grep -v get-signed-url\", \"acceptanceCriteria\": [\"Inserts 6 annual tax events per user in 18-month window\", \"Job is idempotent\", \"Snoozed/dismissed events survive\", \"accountId is null\", \"TypeScript compiles clean\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Nav + /tax layout + redirect",
+      "status": "pending",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** Tax link in top nav, /tax redirects to /tax/super, Super/Donations sub-nav in layout.\n\n**Files:**\n- Modify: `components/nav.tsx`\n- Create: `app/(authenticated)/tax/page.tsx`\n- Create: `app/(authenticated)/tax/layout.tsx`\n\n**Acceptance Criteria:**\n- [ ] \"Tax\" link appears in nav between Plan and Runway\n- [ ] `/tax` redirects to `/tax/super`\n- [ ] Sub-nav shows Super / Donations tabs with correct active state\n- [ ] TypeScript compiles clean\n\n**Verify:** `npx tsc --noEmit 2>&1 | grep -v get-signed-url`\n\n```json:metadata\n{\"files\": [\"components/nav.tsx\", \"app/(authenticated)/tax/page.tsx\", \"app/(authenticated)/tax/layout.tsx\"], \"verifyCommand\": \"npx tsc --noEmit 2>&1 | grep -v get-signed-url\", \"acceptanceCriteria\": [\"Tax link between Plan and Runway\", \"/tax redirects to /tax/super\", \"Sub-nav shows Super/Donations with active state\", \"TypeScript compiles clean\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Super cap monitor page — /tax/super",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** Server component showing cap progress bar, per-payslip breakdown table, and end-of-FY projection.\n\n**Files:**\n- Create: `app/(authenticated)/tax/super/page.tsx`\n\n**Acceptance Criteria:**\n- [ ] Auth guard redirects to `/sign-in` if not logged in\n- [ ] Cap meter shows total contributed / $27,500 as a progress bar with remaining headroom\n- [ ] Payslip table shows date, employer super, salary sacrifice, running total\n- [ ] Projection shown when payslips exist\n- [ ] Over-cap amber callout shown when projected total > $27,500\n- [ ] Empty state shown when no payslips this FY\n- [ ] TypeScript compiles clean\n\n**Verify:** `npx tsc --noEmit 2>&1 | grep -v get-signed-url`\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/tax/super/page.tsx\"], \"verifyCommand\": \"npx tsc --noEmit 2>&1 | grep -v get-signed-url\", \"acceptanceCriteria\": [\"Auth guard works\", \"Cap meter shows progress\", \"Payslip table correct\", \"Projection shown\", \"Over-cap amber callout\", \"Empty state\", \"TypeScript compiles\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Donation tracker page — /tax/donations",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** Server component showing FY total and a transaction list of DGR-registered donations.\n\n**Files:**\n- Create: `app/(authenticated)/tax/donations/page.tsx`\n\n**Acceptance Criteria:**\n- [ ] Auth guard redirects to `/sign-in` if not logged in\n- [ ] FY total shown as large headline with transaction count\n- [ ] Transaction list shows date, merchant/description, amount (positive) ordered most recent first\n- [ ] Empty state shown when no donation transactions this FY\n- [ ] TypeScript compiles clean\n\n**Verify:** `npx tsc --noEmit 2>&1 | grep -v get-signed-url`\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/tax/donations/page.tsx\"], \"verifyCommand\": \"npx tsc --noEmit 2>&1 | grep -v get-signed-url\", \"acceptanceCriteria\": [\"Auth guard works\", \"FY total headline with transaction count\", \"Transaction list most recent first, amounts positive\", \"Empty state\", \"TypeScript compiles\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-06T00:00:00.000Z"
+}
