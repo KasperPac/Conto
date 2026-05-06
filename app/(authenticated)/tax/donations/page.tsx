@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server'
 import { getDonationData } from '@/lib/db/queries/tax'
 import { currentFY, fyLabel } from '@/lib/utils/fy'
