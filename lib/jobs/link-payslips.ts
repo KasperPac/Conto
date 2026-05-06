@@ -39,6 +39,11 @@ export async function runLinkPayslips(userId: string): Promise<void> {
       .from(transactionLinks)
       .where(and(eq(transactionLinks.userId, userId), eq(transactionLinks.linkType, 'income')));
 
+    // Track deposits claimed in earlier iterations of this run to prevent
+    // two payslips from claiming the same deposit (NULL != NULL in the unique index
+    // means the DB constraint doesn't protect us within a single transaction)
+    const claimedTxIds = new Set<string>();
+
     for (const payslip of unlinkedPayslips) {
       // Window: payDate ±3 days — matches matchPayslipToIncome's hard cut-off
       const payMs = new Date(payslip.payDate).getTime();
@@ -61,10 +66,13 @@ export async function runLinkPayslips(userId: string): Promise<void> {
         ));
 
       // DB returns amountCents as bigint; cast to Cents before matching
-      const candidateTxs = candidateRows.map(r => ({
-        ...r,
-        amountCents: toCents(r.amountCents),
-      }));
+      // Also filter out deposits already claimed in earlier iterations of this run
+      const candidateTxs = candidateRows
+        .filter(r => !claimedTxIds.has(r.id))
+        .map(r => ({
+          ...r,
+          amountCents: toCents(r.amountCents),
+        }));
 
       const matches = matchPayslipToIncome(payslip, candidateTxs, cadences);
       if (matches.length === 0) continue;
@@ -85,6 +93,8 @@ export async function runLinkPayslips(userId: string): Promise<void> {
         confidence: storedConfidence,
         source: roundedConfidence >= 0.90 ? 'auto' : 'suggested',
       });
+      // Mark deposit as claimed so later payslips in this run can't steal it
+      claimedTxIds.add(best.transactionId);
     }
   });
 }

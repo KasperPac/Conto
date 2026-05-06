@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server';
 import { withUser } from '@/lib/db/client';
-import { transactionLinks } from '@/lib/db/schema';
+import { transactionLinks, transactions } from '@/lib/db/schema';
 
 async function getUser(): Promise<string> {
   try { return await getCurrentUserId(); }
@@ -33,12 +33,14 @@ export async function confirmIncomeLink(linkId: string): Promise<void> {
 export async function dismissIncomeLink(linkId: string): Promise<void> {
   const userId = await getUser();
   await withUser(userId, async (tx) => {
-    await tx.delete(transactionLinks)
+    const [deleted] = await tx.delete(transactionLinks)
       .where(and(
         eq(transactionLinks.id, linkId),
         eq(transactionLinks.userId, userId),
         eq(transactionLinks.linkType, 'income'),
-      ));
+      ))
+      .returning({ id: transactionLinks.id });
+    if (!deleted) throw new Error('Link not found');
   });
   revalidatePath('/income/payslips');
 }
@@ -46,6 +48,13 @@ export async function dismissIncomeLink(linkId: string): Promise<void> {
 export async function createManualIncomeLink(payslipId: string, depositTxId: string): Promise<void> {
   const userId = await getUser();
   await withUser(userId, async (tx) => {
+    // Verify deposit transaction belongs to user
+    const [owned] = await tx
+      .select({ id: transactions.id })
+      .from(transactions)
+      .where(and(eq(transactions.id, depositTxId), eq(transactions.userId, userId)));
+    if (!owned) throw new Error('Transaction not found');
+
     // Remove any existing income link for this payslip first
     await tx.delete(transactionLinks)
       .where(and(
