@@ -9,7 +9,7 @@ const pool = new Pool({ connectionString: url });
 export const testDb = drizzle(pool, { schema });
 
 const ALL_TABLES = [
-  'expected_events', 'pay_cadences', 'recurrence_groups',
+  'wfh_entries', 'expected_events', 'pay_cadences', 'recurrence_groups',
   'transaction_links', 'transactions',
   'subscriptions', 'goals', 'budgets', 'rules',
   'statements', 'accounts', 'payslips', 'merchants', 'categories',

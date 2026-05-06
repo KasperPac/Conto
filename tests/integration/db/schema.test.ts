@@ -11,7 +11,7 @@ describe('schema', () => {
     const required = [
       'users','session','account','verification',
       'accounts','statements','transactions','transaction_links','merchants','categories','rules','payslips','subscriptions','goals','budgets',
-      'recurrence_groups','pay_cadences','expected_events',
+      'recurrence_groups','pay_cadences','expected_events','wfh_entries',
     ];
     const { rows } = await pool.query<{ table_name: string }>(
       "select table_name from information_schema.tables where table_schema = 'public'"
@@ -31,6 +31,14 @@ describe('schema', () => {
       ['transactions', 'recurrence_group_id'],
       ['users', 'cashflow_buffer_cents'],
       ['payslips', 'cadence'],
+      ['transactions', 'receipt_filename'],
+      ['transactions', 'receipt_content_type'],
+      ['wfh_entries', 'id'],
+      ['wfh_entries', 'user_id'],
+      ['wfh_entries', 'date'],
+      ['wfh_entries', 'hours'],
+      ['wfh_entries', 'created_at'],
+      ['wfh_entries', 'updated_at'],
     ];
     for (const [table, column] of checks) {
       const { rows } = await pool.query(

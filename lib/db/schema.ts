@@ -159,6 +159,8 @@ export const transactions = pgTable('transactions', {
   notes: text('notes'),
   receiptObjectKey: text('receipt_object_key'),
   receiptUploadedAt: timestamp('receipt_uploaded_at', { withTimezone: true }),
+  receiptFilename: text('receipt_filename'),
+  receiptContentType: text('receipt_content_type'),
   recurrenceGroupId: uuid('recurrence_group_id').references(() => recurrenceGroups.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
@@ -270,4 +272,15 @@ export const expectedEvents = pgTable('expected_events', {
   // drizzle-kit doesn't support partial indexes — the WHERE clause is added manually in the migration.
   // If you re-run db:generate, re-apply the manual patch in the migration SQL.
   pendingByDateIdx: index('expected_events_pending_idx').on(t.userId, t.expectedDate),
+}));
+
+export const wfhEntries = pgTable('wfh_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  date: date('date').notNull(),
+  hours: numeric('hours', { precision: 4, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userDateUniq: uniqueIndex('wfh_entries_user_date_idx').on(t.userId, t.date),
 }));
