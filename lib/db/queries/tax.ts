@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { withUser } from '@/lib/db/client'
 import { payslips, transactions, categories, merchants } from '@/lib/db/schema'
 import { toCents } from '@/lib/types/money'
@@ -122,5 +122,122 @@ export async function getDonationData(
     })
 
     return { rows: donationRows, totalCents: toCents(total) }
+  })
+}
+
+export interface PayslipFySummary {
+  totalGrossCents: Cents
+  totalPaygCents: Cents
+  payslipCount: number
+  earliestPayDate: string | null
+  latestPayDate: string | null
+}
+
+export async function getPayslipSummaryForFy(
+  userId: string,
+  fyStart: string,
+  fyEnd: string,
+): Promise<PayslipFySummary> {
+  return withUser(userId, async (tx) => {
+    const rows = await tx
+      .select({
+        payDate: payslips.payDate,
+        grossCents: payslips.grossCents,
+        taxWithheldCents: payslips.taxWithheldCents,
+      })
+      .from(payslips)
+      .where(
+        and(
+          eq(payslips.userId, userId),
+          sql`${payslips.payDate}::date >= ${fyStart}::date`,
+          sql`${payslips.payDate}::date <= ${fyEnd}::date`,
+        ),
+      )
+      .orderBy(payslips.payDate)
+
+    if (rows.length === 0) {
+      return {
+        totalGrossCents: toCents(0n),
+        totalPaygCents: toCents(0n),
+        payslipCount: 0,
+        earliestPayDate: null,
+        latestPayDate: null,
+      }
+    }
+
+    let totalGross = 0n
+    let totalPayg = 0n
+    for (const row of rows) {
+      totalGross += row.grossCents
+      totalPayg += row.taxWithheldCents
+    }
+
+    return {
+      totalGrossCents: toCents(totalGross),
+      totalPaygCents: toCents(totalPayg),
+      payslipCount: rows.length,
+      earliestPayDate: rows[0]!.payDate as string,
+      latestPayDate: rows[rows.length - 1]!.payDate as string,
+    }
+  })
+}
+
+export interface DeductibleKindTotal {
+  deductionKind: string
+  totalCents: Cents
+}
+
+export interface DeductibleFyTotals {
+  byKind: DeductibleKindTotal[]
+  grandTotalCents: Cents
+}
+
+export async function getDeductibleTotalsForFy(
+  userId: string,
+  fyStart: string,
+  fyEnd: string,
+): Promise<DeductibleFyTotals> {
+  return withUser(userId, async (tx) => {
+    const rows = await tx
+      .select({
+        deductionKind: categories.deductionKind,
+        amountCents: transactions.amountCents,
+      })
+      .from(transactions)
+      .innerJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(categories.isDeductibleCandidate, true),
+          isNotNull(categories.deductionKind),
+          sql`${transactions.postedDate}::date >= ${fyStart}::date`,
+          sql`${transactions.postedDate}::date <= ${fyEnd}::date`,
+        ),
+      )
+
+    // Group by deductionKind in TypeScript
+    const kindMap = new Map<string, bigint>()
+    for (const row of rows) {
+      const kind = row.deductionKind!
+      const abs = -row.amountCents  // spending is negative in DB; negate to get positive amount
+      kindMap.set(kind, (kindMap.get(kind) ?? 0n) + abs)
+    }
+
+    const byKind: DeductibleKindTotal[] = Array.from(kindMap.entries())
+      .map(([deductionKind, total]) => ({
+        deductionKind,
+        totalCents: toCents(total),
+      }))
+      .sort((a, b) => (b.totalCents > a.totalCents ? 1 : b.totalCents < a.totalCents ? -1 : 0))
+
+    let grandTotal = 0n
+    for (const k of byKind) {
+      grandTotal += k.totalCents
+    }
+
+    return {
+      byKind,
+      grandTotalCents: toCents(grandTotal),
+    }
   })
 }
