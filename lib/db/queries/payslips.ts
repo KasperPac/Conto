@@ -120,7 +120,7 @@ export async function createPayslipRecord(
     preTaxDeductionsCents: bigint;
     postTaxDeductionsCents: bigint;
     sourceObjectKey: string;
-    source: 'pdf';
+    source: string;
   },
 ): Promise<string> {
   return withUser(userId, async (tx) => {

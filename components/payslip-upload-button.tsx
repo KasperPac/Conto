@@ -33,6 +33,7 @@ export function PayslipUploadButton() {
         type="file"
         accept="application/pdf"
         className="hidden"
+        aria-label="Select payslip PDF"
         onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
       />
       <button

@@ -47,6 +47,7 @@ export async function POST(req: Request): Promise<Response> {
     parsed = await dispatchPayslip(buf);
   } catch (err) {
     if (err instanceof UnknownFormatError) {
+      // R2 object is intentionally left stored for potential debugging; no DB record written.
       return NextResponse.json({ error: 'unrecognised_payslip_format' }, { status: 422 });
     }
     throw err;
@@ -71,11 +72,9 @@ export async function POST(req: Request): Promise<Response> {
   try {
     await boss.send('link-payslips', { userId });
   } catch (err) {
-    return NextResponse.json({
-      error: 'Upload succeeded but job enqueue failed',
-      payslipId,
-      detail: String(err),
-    }, { status: 502 });
+    console.error('[payslips/upload] link-payslips enqueue failed', err);
+    // Payslip saved; link job will run on next trigger.
+    return NextResponse.json({ ok: true, payslipId }, { status: 200 });
   }
 
   return NextResponse.json({ ok: true, payslipId });
