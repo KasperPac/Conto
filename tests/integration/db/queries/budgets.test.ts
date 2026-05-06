@@ -118,8 +118,8 @@ describe('budgets queries', () => {
     const result = await getBudgetWithSpend(userId, 'monthly', '2026-05-01', '2026-05-31');
     expect(result).toHaveLength(1);
     expect(result[0]!.amountCents).toBe(BigInt(50000));
-    // Only the -12000 transaction should be counted
-    expect(result[0]!.spentCents).toBe(BigInt(-12000));
+    // Only the -12000 transaction should be counted (as positive absolute value)
+    expect(result[0]!.spentCents).toBe(BigInt(12000));
   });
 
   it('upsertBudget updates existing active budget for same category+period (not insert duplicate)', async () => {

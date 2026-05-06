@@ -108,7 +108,7 @@ export async function getBudgetWithSpend(
     const spendRows = await tx
       .select({
         categoryId: transactions.categoryId,
-        spentCents: sql<bigint>`coalesce(sum(${transactions.amountCents}), 0)::bigint`,
+        spentCents: sql<bigint>`abs(coalesce(sum(${transactions.amountCents}), 0))::bigint`,
       })
       .from(transactions)
       .where(
