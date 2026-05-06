@@ -1,0 +1,96 @@
+{
+  "planPath": "Docs/superpowers/plans/2026-05-06-phase4-payslips-income.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 1: Migration + schema + test-helper update",
+      "status": "pending",
+      "description": "**Goal:** Add `wfh_entries` table and `receipt_filename`/`receipt_content_type` columns to `transactions`; reflect in Drizzle schema and test-helper.\n\n**Files:**\n- Create: `lib/db/migrations/0005_phase4.sql`\n- Modify: `lib/db/schema.ts`\n- Modify: `tests/helpers/db.ts`\n\n**Acceptance Criteria:**\n- [ ] `npm run db:migrate` succeeds\n- [ ] `wfh_entries` table exists with unique constraint on `(user_id, date)`\n- [ ] `transactions.receipt_filename` and `transactions.receipt_content_type` columns exist\n- [ ] `resetTestDb()` truncates `wfh_entries`\n\n**Verify:** `npx vitest run tests/unit/db/schema.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/db/migrations/0005_phase4.sql\", \"lib/db/schema.ts\", \"tests/helpers/db.ts\"], \"verifyCommand\": \"npx vitest run tests/unit/db/schema.test.ts\", \"acceptanceCriteria\": [\"Migration runs without error\", \"wfh_entries table with unique (user_id, date)\", \"receipt_filename + receipt_content_type on transactions\", \"resetTestDb truncates wfh_entries\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 2: FY utility + payslip queries",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** Shared FY date-bound helpers and all payslip read-queries the UI needs.\n\n**Files:**\n- Create: `lib/domain/fy.ts`\n- Create: `lib/db/queries/payslips.ts`\n\n**Acceptance Criteria:**\n- [ ] `fyBounds(2026)` returns `{ start: '2025-07-01', end: '2026-06-30' }`\n- [ ] `getPayslipsByUser` returns payslips ordered by `pay_date DESC` with link status\n- [ ] `getUnlinkedPayslips` excludes payslips that have an `income` link\n\n**Verify:** `npx vitest run tests/unit/domain/fy.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/domain/fy.ts\", \"lib/db/queries/payslips.ts\"], \"verifyCommand\": \"npx vitest run tests/unit/domain/fy.test.ts\", \"acceptanceCriteria\": [\"fyBounds(2026) returns {start: '2025-07-01', end: '2026-06-30'}\", \"getPayslipsByUser returns by pay_date DESC with link status\", \"getUnlinkedPayslips excludes income-linked payslips\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 3: Payslip-linking domain + unit tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Pure `matchPayslipToIncome` function with confidence scoring and full unit-test coverage.\n\n**Files:**\n- Create: `lib/domain/payslip-linking.ts`\n- Create: `tests/unit/domain/payslip-linking.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Exact amount + date match scores 0.70\n- [ ] Employer name in description adds 0.20\n- [ ] Matching pay_cadences adds 0.10\n- [ ] Returns empty array when no candidate within ±3 days\n- [ ] Already-linked transactions excluded\n\n**Verify:** `npx vitest run tests/unit/domain/payslip-linking.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/domain/payslip-linking.ts\", \"tests/unit/domain/payslip-linking.test.ts\"], \"verifyCommand\": \"npx vitest run tests/unit/domain/payslip-linking.test.ts\", \"acceptanceCriteria\": [\"Exact match scores 0.70 base\", \"+0.20 for employer name in description\", \"+0.10 for matching pay cadence\", \"No match outside ±3 day window\", \"Already-linked transactions excluded\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 4: Link-payslips job + actions + integration tests",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** pg-boss job that matches and auto-confirms payslips; server actions for user confirm/skip/manual-link.\n\n**Files:**\n- Create: `lib/jobs/link-payslips.ts`\n- Modify: `lib/jobs/index.ts`\n- Create: `app/actions/payslips.ts`\n- Create: `tests/integration/jobs/link-payslips.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Job auto-confirms link when confidence ≥ 0.90 (source='auto')\n- [ ] Job stores suggested link when confidence < 0.90 (source='suggested')\n- [ ] `confirmLink` sets source='user' on existing link\n- [ ] `skipLink` deletes the suggested link row\n- [ ] `manualLink` inserts a new link with source='user'\n\n**Verify:** `npx vitest run tests/integration/jobs/link-payslips.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/jobs/link-payslips.ts\", \"lib/jobs/index.ts\", \"app/actions/payslips.ts\", \"tests/integration/jobs/link-payslips.test.ts\"], \"verifyCommand\": \"npx vitest run tests/integration/jobs/link-payslips.test.ts\", \"acceptanceCriteria\": [\"Job auto-confirms at confidence >= 0.90\", \"Job stores suggested at confidence < 0.90\", \"confirmLink sets source=user\", \"skipLink deletes suggested link\", \"manualLink inserts with source=user\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 5: Income-summary queries + integration tests",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Three query functions for the income dashboard: period totals, monthly breakdown, per-employer breakdown.\n\n**Files:**\n- Create: `lib/db/queries/income-summary.ts`\n- Create: `tests/integration/db/income-summary.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `getIncomeSummary` returns correct aggregates for a date range\n- [ ] `getIncomeByMonth` returns one row per month in range, ordered chronologically\n- [ ] `getIncomeByEmployer` returns one row per distinct employer\n- [ ] All three return empty/zero when no payslips in range\n\n**Verify:** `npx vitest run tests/integration/db/income-summary.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/db/queries/income-summary.ts\", \"tests/integration/db/income-summary.test.ts\"], \"verifyCommand\": \"npx vitest run tests/integration/db/income-summary.test.ts\", \"acceptanceCriteria\": [\"getIncomeSummary returns correct aggregates\", \"getIncomeByMonth returns one row per month ordered chronologically\", \"getIncomeByEmployer returns one row per employer\", \"All return empty/zero when no payslips in range\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 6: /income layout + sub-nav + nav link + stub pages",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Shared `/income` layout with sub-nav tabs; `Income` entry in main sidebar nav; four stub pages that load without error.\n\n**Files:**\n- Create: `app/(authenticated)/income/layout.tsx`\n- Create: `app/(authenticated)/income/page.tsx` (stub)\n- Create: `app/(authenticated)/income/payslips/page.tsx` (stub)\n- Create: `app/(authenticated)/income/wfh/page.tsx` (stub)\n- Create: `app/(authenticated)/income/receipts/page.tsx` (stub)\n- Modify: `middleware.ts`\n- Modify: `components/nav.tsx`\n\n**Acceptance Criteria:**\n- [ ] `/income`, `/income/payslips`, `/income/wfh`, `/income/receipts` all render without 404\n- [ ] Sub-nav highlights the active tab\n- [ ] `Income` appears in sidebar between Subscriptions and Runway\n\n**Verify:** `npm run build` → 0 errors\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/income/layout.tsx\", \"app/(authenticated)/income/page.tsx\", \"app/(authenticated)/income/payslips/page.tsx\", \"app/(authenticated)/income/wfh/page.tsx\", \"app/(authenticated)/income/receipts/page.tsx\", \"middleware.ts\", \"components/nav.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"All four /income routes render without 404\", \"Sub-nav highlights active tab\", \"Income in sidebar between Subscriptions and Runway\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 7: Payslips review page + link-panel component",
+      "status": "pending",
+      "blockedBy": [3, 5],
+      "description": "**Goal:** Full `/income/payslips` page with paginated payslip list and detail panel for linking review.\n\n**Files:**\n- Modify: `app/(authenticated)/income/payslips/page.tsx`\n- Create: `components/payslip-link-panel.tsx`\n\n**Acceptance Criteria:**\n- [ ] Payslip list shows status badge (Linked/Review/Unlinked)\n- [ ] Clicking a Review payslip opens detail panel with candidate transaction and confidence\n- [ ] Confirm link calls `confirmLink` action and revalidates\n- [ ] Skip calls `skipLink` action and closes panel\n- [ ] Linked payslips show matched deposit account + date\n\n**Verify:** `npm run build` → 0 errors; manual smoke test in browser\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/income/payslips/page.tsx\", \"components/payslip-link-panel.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"Payslip list shows status badges\", \"Review payslip shows detail panel with candidate + confidence\", \"Confirm link action works\", \"Skip action works\", \"Linked payslips show deposit info\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 8: Income dashboard page + summary cards + chart",
+      "status": "pending",
+      "blockedBy": [4, 5],
+      "description": "**Goal:** Full `/income` dashboard with FY/calendar-year selector, four summary cards, Recharts grouped bar chart, per-employer table, and payslip list.\n\n**Files:**\n- Modify: `app/(authenticated)/income/page.tsx`\n- Create: `components/income-summary-cards.tsx`\n- Create: `components/income-chart.tsx`\n\n**Acceptance Criteria:**\n- [ ] FY selector defaults to current FY; switching to calendar year updates all data\n- [ ] Four summary cards show gross, tax withheld, super, net with payslip count\n- [ ] Recharts bar chart with four series renders without error\n- [ ] Per-employer table visible only when ≥ 2 employers\n- [ ] Payslip list at bottom with row-click navigating to `/income/payslips?highlight={id}`\n\n**Verify:** `npm run build` → 0 errors; manual smoke test in browser\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/income/page.tsx\", \"components/income-summary-cards.tsx\", \"components/income-chart.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"FY selector defaults to current FY\", \"Four summary cards render\", \"Recharts bar chart with four series\", \"Per-employer table shown only with >= 2 employers\", \"Payslip list with row-click navigation\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 9: WFH queries + server actions + integration tests",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** Query functions and server actions for WFH entry management.\n\n**Files:**\n- Create: `lib/db/queries/wfh-entries.ts`\n- Create: `app/actions/wfh.ts`\n- Create: `tests/integration/db/wfh-entries.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `getWfhEntriesByMonth` returns all entries for a given year+month\n- [ ] `getWfhSummaryByFY` returns total hours and monthly breakdown\n- [ ] `upsertWfhEntry` inserts or updates on (user_id, date)\n- [ ] `deleteWfhEntry` removes the entry for a date\n- [ ] FY boundary: 2025-07-01 to 2026-06-30 for FY2026\n\n**Verify:** `npx vitest run tests/integration/db/wfh-entries.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/db/queries/wfh-entries.ts\", \"app/actions/wfh.ts\", \"tests/integration/db/wfh-entries.test.ts\"], \"verifyCommand\": \"npx vitest run tests/integration/db/wfh-entries.test.ts\", \"acceptanceCriteria\": [\"getWfhEntriesByMonth returns entries for month\", \"getWfhSummaryByFY returns totals + monthly breakdown\", \"upsertWfhEntry inserts or updates\", \"deleteWfhEntry removes entry\", \"FY boundary correct\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 10: WFH page + calendar + summary-panel",
+      "status": "pending",
+      "blockedBy": [5, 8],
+      "description": "**Goal:** Full `/income/wfh` page with interactive monthly calendar grid and summary panel showing FY deduction estimate.\n\n**Files:**\n- Modify: `app/(authenticated)/income/wfh/page.tsx`\n- Create: `components/wfh-calendar.tsx`\n- Create: `components/wfh-summary-panel.tsx`\n\n**Acceptance Criteria:**\n- [ ] Monthly calendar grid renders Mon–Sun columns with weekends greyed out\n- [ ] Clicking a workday opens popover with hours input (default 8, step 0.5)\n- [ ] Save calls `upsertWfhEntry`; Clear calls `deleteWfhEntry`\n- [ ] Summary panel shows FY total hours, estimated deduction (hours × $0.67), monthly breakdown\n- [ ] ATO disclaimer rendered in footer\n\n**Verify:** `npm run build` → 0 errors; manual smoke test in browser\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/income/wfh/page.tsx\", \"components/wfh-calendar.tsx\", \"components/wfh-summary-panel.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"Calendar grid with weekends greyed out\", \"Popover with hours input on workday click\", \"upsertWfhEntry/deleteWfhEntry called correctly\", \"Summary panel with deduction estimate\", \"ATO disclaimer in footer\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 11: Receipt R2 helpers + upload endpoint",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** R2 upload helper for receipts, presigned URL getter, and POST upload endpoint.\n\n**Files:**\n- Create: `lib/storage/put-receipt.ts`\n- Create: `lib/storage/get-signed-url.ts`\n- Create: `app/api/receipts/upload/route.ts`\n- Create: `tests/integration/api/receipts-upload.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `npm install @aws-sdk/s3-request-presigner` succeeds\n- [ ] R2 key format: `{userId}/receipts/{transactionId}/{uuid}.{ext}`\n- [ ] Endpoint rejects non-PDF/JPEG/PNG content types with 400\n- [ ] Endpoint rejects files > 10 MB with 400\n- [ ] Endpoint rejects `transactionId` belonging to a different user with 403\n- [ ] On success: `receipt_object_key`, `receipt_filename`, `receipt_content_type`, `receipt_uploaded_at` written to transaction row\n\n**Verify:** `npx vitest run tests/integration/api/receipts-upload.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/storage/put-receipt.ts\", \"lib/storage/get-signed-url.ts\", \"app/api/receipts/upload/route.ts\", \"tests/integration/api/receipts-upload.test.ts\"], \"verifyCommand\": \"npx vitest run tests/integration/api/receipts-upload.test.ts\", \"acceptanceCriteria\": [\"R2 key format: {userId}/receipts/{transactionId}/{uuid}.{ext}\", \"Rejects non-PDF/JPEG/PNG with 400\", \"Rejects >10MB with 400\", \"Rejects other user's transactionId with 403\", \"Writes receipt metadata to transaction row\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 12: Receipts query + delete action + integration tests",
+      "status": "pending",
+      "blockedBy": [10],
+      "description": "**Goal:** Read and delete query functions for the receipts vault.\n\n**Files:**\n- Create: `lib/db/queries/receipts.ts`\n- Create: `app/actions/receipts.ts`\n- Create: `tests/integration/db/receipts.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `getReceiptsByFY` only returns transactions where `receipt_object_key IS NOT NULL`\n- [ ] `getReceiptsByFY` filters by `posted_date` within FY bounds\n- [ ] `getReceiptsByFY` orders by `posted_date DESC`\n- [ ] `deleteReceipt` clears receipt columns and deletes R2 object\n\n**Verify:** `npx vitest run tests/integration/db/receipts.test.ts` → PASS\n\n```json:metadata\n{\"files\": [\"lib/db/queries/receipts.ts\", \"app/actions/receipts.ts\", \"tests/integration/db/receipts.test.ts\"], \"verifyCommand\": \"npx vitest run tests/integration/db/receipts.test.ts\", \"acceptanceCriteria\": [\"getReceiptsByFY excludes null receipt_object_key\", \"getReceiptsByFY filters by FY date bounds\", \"getReceiptsByFY orders by posted_date DESC\", \"deleteReceipt clears columns and removes R2 object\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 13: Receipts vault page + modals + transaction paperclip",
+      "status": "pending",
+      "blockedBy": [5, 11],
+      "description": "**Goal:** Full `/income/receipts` vault with FY tabs and receipt grid; upload and viewer modals; paperclip icon on transaction rows.\n\n**Files:**\n- Modify: `app/(authenticated)/income/receipts/page.tsx`\n- Create: `components/receipt-upload-modal.tsx`\n- Create: `components/receipt-viewer-modal.tsx`\n- Create: `components/receipt-cell.tsx`\n- Modify: `app/(authenticated)/accounts/[id]/transactions/page.tsx`\n\n**Acceptance Criteria:**\n- [ ] FY tabs show only years with at least one receipt\n- [ ] Receipt grid shows thumbnail (PDF icon or `<img>`), filename, linked transaction, upload date\n- [ ] Upload modal accepts PDF/JPEG/PNG up to 10 MB with optional transaction link\n- [ ] Viewer modal shows PDF `<iframe>` or `<img>` using presigned R2 URL\n- [ ] Transaction list shows filled paperclip (has receipt) or empty paperclip (no receipt)\n- [ ] Clicking empty paperclip opens upload modal; filled opens viewer\n\n**Verify:** `npm run build` → 0 errors; manual smoke test in browser\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/income/receipts/page.tsx\", \"components/receipt-upload-modal.tsx\", \"components/receipt-viewer-modal.tsx\", \"components/receipt-cell.tsx\", \"app/(authenticated)/accounts/[id]/transactions/page.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"FY tabs show only years with receipts\", \"Receipt grid with thumbnail + metadata\", \"Upload modal with PDF/JPEG/PNG validation\", \"Viewer modal with presigned URL\", \"Paperclip icon on transaction rows\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-06T00:00:00Z"
+}
