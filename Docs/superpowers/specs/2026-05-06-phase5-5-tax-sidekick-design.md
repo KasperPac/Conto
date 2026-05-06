@@ -129,13 +129,16 @@ The job iterates over all users (respects multi-tenant schema) and inserts per-u
 ```ts
 {
   userId,
+  accountId: null,                  // nullable after migration
   source: 'tax_obligation',
+  sourceId: null,
   status: 'pending',
   description: 'Q1 BAS due',       // human-readable
   expectedDate: '2026-10-28',
   expectedAmountCents: 0n,
-  confidence: 1.0,                  // certain dates
-  recurrenceGroupId: null,
+  expectedAmountLowCents: 0n,
+  expectedAmountHighCents: 0n,
+  confidence: '1.000',              // numeric column, stored as string
   snoozedUntil: null,
 }
 ```
@@ -201,10 +204,16 @@ function fyLabel(start: Date): string
 | `lib/db/queries/tax.ts` | Create | getSuperCapData, getDonationData |
 | `lib/utils/fy.ts` | Create | currentFY, fyLabel helpers |
 | `lib/jobs/tax-obligations.ts` | Create | Nightly pg-boss job for tax dates |
+| `lib/db/migrations/0008_phase5_5_tax.sql` | Create | Make expected_events.account_id nullable |
 | `tests/unit/utils/fy.test.ts` | Create | Unit tests for FY helpers |
 | `tests/integration/db/queries/tax.test.ts` | Create | Integration tests for tax queries |
 
-No schema migrations required — all data already exists in `payslips`, `transactions`, `categories`, and `expected_events`.
+**One migration required:** `accountId` on `expected_events` is currently `NOT NULL`. Tax obligation events aren't account-specific, so the column must be made nullable:
+
+```sql
+-- 0008_phase5_5_tax.sql
+alter table expected_events alter column account_id drop not null;
+```
 
 ---
 
