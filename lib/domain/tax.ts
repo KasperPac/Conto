@@ -6,7 +6,7 @@
 export interface TaxEstimateInput {
   fyGrossCents: bigint;
   fyPaygCents: bigint;
-  fyDeductionsCents: bigint;
+  fyDeductionsCents: bigint;    // YTD actuals used as-is — not projected forward
   weeksElapsed: number;
   totalFyWeeks: number;
 }
@@ -59,7 +59,7 @@ function calculateTaxLiability(taxableIncomeCents: bigint): bigint {
   }
 
   // Find applicable bracket by finding the highest threshold that income exceeds
-  let applicableBracket = BRACKETS[0];
+  let applicableBracket = BRACKETS[0]!;
   let incomeAboveThreshold = taxableIncomeCents;
 
   for (const bracket of BRACKETS) {
@@ -72,6 +72,7 @@ function calculateTaxLiability(taxableIncomeCents: bigint): bigint {
   // Calculate bracket tax
   const bracketTax = applicableBracket.base + (incomeAboveThreshold * applicableBracket.ratePer10000) / 10000n;
 
+  // Simplified: no shade-in zone ($26k–$32.5k). ATO phases in at 10c/dollar in that range.
   // Calculate Medicare levy (2% above $26,000)
   const medicareLevi =
     taxableIncomeCents > MEDICARE_THRESHOLD_CENTS

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { estimateTax, type TaxEstimateInput } from '@/lib/domain/tax';
+import { estimateTax } from '@/lib/domain/tax';
 
 describe('estimateTax', () => {
   describe('tax bracket calculation', () => {
@@ -156,7 +156,7 @@ describe('estimateTax', () => {
   });
 
   describe('LITO (Low Income Tax Offset)', () => {
-    it('applies full LITO below $37,500', () => {
+    it('applies full LITO at and below $37,500', () => {
       const result = estimateTax({
         fyGrossCents: 3_750_000n,
         fyPaygCents: 0n,
