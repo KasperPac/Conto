@@ -1,0 +1,38 @@
+{
+  "planPath": "Docs/superpowers/plans/2026-05-07-phase6-pdf-parsing-tax-estimation.md",
+  "tasks": [
+    {
+      "id": 9,
+      "subject": "Task 1: MYOB Payslip Parser",
+      "status": "pending",
+      "description": "**Goal:** Pure async function that extracts all payslip fields from a MYOB PDF, with detect + dispatch entry points and a passing unit test against the real fixture.\n\n**Files:**\n- Create: `tests/fixtures/payslips/myob/payslip_sample.pdf`\n- Create: `lib/parsers/payslips/detect.ts`\n- Create: `lib/parsers/payslips/myob.ts`\n- Create: `lib/parsers/payslips/index.ts`\n- Create: `tests/unit/parsers/payslips/myob.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `parseMyobPayslip` returns correct values for all fields against the real fixture\n- [ ] `detectPayslipFormat` returns `'myob_pdf_v1'` for the MYOB sample\n- [ ] `dispatchPayslip` throws `UnknownFormatError` for a non-payslip buffer\n- [ ] All unit tests pass\n\n**Verify:** `npx vitest run tests/unit/parsers/payslips/myob.test.ts` → all tests pass\n\n```json:metadata\n{\"files\": [\"lib/parsers/payslips/detect.ts\", \"lib/parsers/payslips/myob.ts\", \"lib/parsers/payslips/index.ts\", \"tests/unit/parsers/payslips/myob.test.ts\", \"tests/fixtures/payslips/myob/payslip_sample.pdf\"], \"verifyCommand\": \"npx vitest run tests/unit/parsers/payslips/myob.test.ts\", \"acceptanceCriteria\": [\"parseMyobPayslip returns correct values for all fields\", \"detectPayslipFormat returns myob_pdf_v1 for the MYOB sample\", \"dispatchPayslip throws UnknownFormatError for non-payslip buffer\", \"All unit tests pass\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 2: Tax Estimation Domain Module",
+      "status": "pending",
+      "description": "**Goal:** Pure `estimateTax` function applying ATO 2025-26 brackets, Medicare levy, and LITO, with full test coverage of bracket boundaries and edge cases.\n\n**Files:**\n- Create: `lib/domain/tax.ts`\n- Create: `tests/unit/domain/tax.test.ts`\n\n**Acceptance Criteria:**\n- [ ] Each ATO bracket boundary returns correct tax\n- [ ] Medicare levy applied correctly above and below threshold\n- [ ] LITO phases out correctly between $37,500–$66,667\n- [ ] Annualisation scales both gross and PAYG by totalWeeks/weeksElapsed\n- [ ] Deductions reduce taxable income (clamped to 0)\n- [ ] All unit tests pass\n\n**Verify:** `npx vitest run tests/unit/domain/tax.test.ts` → all tests pass\n\n```json:metadata\n{\"files\": [\"lib/domain/tax.ts\", \"tests/unit/domain/tax.test.ts\"], \"verifyCommand\": \"npx vitest run tests/unit/domain/tax.test.ts\", \"acceptanceCriteria\": [\"ATO bracket boundaries return correct tax\", \"Medicare levy correct above/below threshold\", \"LITO phases out correctly\", \"Annualisation scales correctly\", \"Deductions clamped to 0\", \"All unit tests pass\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 3: Payslip Upload Endpoint + UI Button",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** `POST /api/payslips/upload` parses a MYOB PDF synchronously and inserts into the DB; a client-side upload button appears on the `/income/payslips` page.\n\n**Files:**\n- Modify: `lib/db/queries/payslips.ts` — add `createPayslipRecord`\n- Create: `app/api/payslips/upload/route.ts`\n- Create: `components/payslip-upload-button.tsx`\n- Modify: `app/(authenticated)/income/payslips/page.tsx`\n\n**Acceptance Criteria:**\n- [ ] POST with valid MYOB PDF returns 200 `{ ok: true, payslipId }`\n- [ ] Unknown PDF format returns 422\n- [ ] Unauthenticated request returns 401\n- [ ] Payslip appears in the list after upload\n- [ ] `link-payslips` job enqueued after insert\n\n**Verify:** Upload fixture PDF via UI button, verify it appears in payslips list.\n\n```json:metadata\n{\"files\": [\"lib/db/queries/payslips.ts\", \"app/api/payslips/upload/route.ts\", \"components/payslip-upload-button.tsx\", \"app/(authenticated)/income/payslips/page.tsx\"], \"verifyCommand\": \"npx tsc --noEmit\", \"acceptanceCriteria\": [\"POST valid MYOB PDF returns 200\", \"Unknown format returns 422\", \"Unauthenticated returns 401\", \"Payslip appears in list after upload\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 4: Tax FY Queries",
+      "status": "pending",
+      "description": "**Goal:** Two new query functions in `lib/db/queries/tax.ts` that aggregate payslip income and deductible transaction totals for a financial year, with integration tests.\n\n**Files:**\n- Modify: `lib/db/queries/tax.ts` — add `getPayslipSummaryForFy`, `getDeductibleTotalsForFy`\n- Modify: `tests/integration/db/queries/tax.test.ts`\n\n**Acceptance Criteria:**\n- [ ] `getPayslipSummaryForFy` sums gross + PAYG, excludes out-of-window payslips\n- [ ] `getDeductibleTotalsForFy` groups by deductionKind, returns absolute amounts\n- [ ] Integration tests pass\n\n**Verify:** `npx vitest run tests/integration/db/queries/tax.test.ts` → all tests pass\n\n```json:metadata\n{\"files\": [\"lib/db/queries/tax.ts\", \"tests/integration/db/queries/tax.test.ts\"], \"verifyCommand\": \"npx vitest run tests/integration/db/queries/tax.test.ts\", \"acceptanceCriteria\": [\"getPayslipSummaryForFy sums correctly and excludes out-of-window\", \"getDeductibleTotalsForFy groups by kind with absolute amounts\", \"All integration tests pass\"]}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Task 5: Tax Estimate Page",
+      "status": "pending",
+      "blockedBy": [10, 12],
+      "description": "**Goal:** `/tax/estimate` page displaying projected gross, deductions breakdown, and estimated tax outcome; \"Estimate\" tab added to the Tax sub-nav.\n\n**Files:**\n- Modify: `app/(authenticated)/tax/layout.tsx`\n- Create: `app/(authenticated)/tax/estimate/page.tsx`\n\n**Acceptance Criteria:**\n- [ ] \"Estimate\" tab visible in Tax nav\n- [ ] Empty state shown when no payslips for current FY\n- [ ] Income panel shows projected gross and PAYG\n- [ ] Deductions panel shows totals by kind or empty state\n- [ ] Outcome panel shows refund/liability in correct colour\n- [ ] Low-data caveat shown when < 26 weeks\n- [ ] Disclaimer visible\n- [ ] Page type-checks cleanly\n\n**Verify:** `npx tsc --noEmit` → no errors. Navigate to `/tax/estimate` in dev server.\n\n```json:metadata\n{\"files\": [\"app/(authenticated)/tax/layout.tsx\", \"app/(authenticated)/tax/estimate/page.tsx\"], \"verifyCommand\": \"npx tsc --noEmit\", \"acceptanceCriteria\": [\"Estimate tab visible in Tax nav\", \"Empty state when no payslips\", \"Income panel shows projected values\", \"Outcome shows refund/liability with colour\", \"Disclaimer visible\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-07T00:00:00.000Z"
+}
