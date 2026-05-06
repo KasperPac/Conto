@@ -20,6 +20,8 @@ export interface PayslipRow {
   linkedDepositDate: string | null;
   linkedAccountName: string | null;
   linkId: string | null;
+  linkConfidence: number | null;
+  linkedDepositDesc: string | null;
 }
 
 export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
@@ -30,7 +32,9 @@ export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
         payslipId: transactionLinks.payslipId,
         id: transactionLinks.id,
         source: transactionLinks.source,
+        confidence: transactionLinks.confidence,
         depositDate: transactions.postedDate,
+        depositDesc: transactions.descriptionRaw,
         accountName: accounts.name,
       })
       .from(transactionLinks)
@@ -59,7 +63,9 @@ export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
         cadence: payslips.cadence,
         linkId: linkSub.id,
         linkSource: linkSub.source,
+        linkConfidence: linkSub.confidence,
         linkedDepositDate: linkSub.depositDate,
+        linkedDepositDesc: linkSub.depositDesc,
         linkedAccountName: linkSub.accountName,
       })
       .from(payslips)
@@ -80,9 +86,11 @@ export async function getPayslipsByUser(userId: string): Promise<PayslipRow[]> {
       source: r.source,
       cadence: r.cadence,
       linkId: r.linkId ?? null,
-      linkStatus: (r.linkId == null ? 'unlinked' : r.linkSource === 'suggested' ? 'suggested' : 'linked') as PayslipRow['linkStatus'],
+      linkStatus: (r.linkId == null || r.linkSource === 'dismissed' ? 'unlinked' : r.linkSource === 'suggested' ? 'suggested' : 'linked') as PayslipRow['linkStatus'],
       linkedDepositDate: r.linkedDepositDate ?? null,
+      linkedDepositDesc: r.linkedDepositDesc ?? null,
       linkedAccountName: r.linkedAccountName ?? null,
+      linkConfidence: r.linkConfidence != null ? parseFloat(r.linkConfidence as unknown as string) : null,
     }));
   });
 }

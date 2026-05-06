@@ -12,6 +12,7 @@ async function getUser(): Promise<string> {
 }
 
 export async function upsertWfhEntry(date: string, hours: number): Promise<void> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Invalid date format');
   const userId = await getUser();
   if (hours <= 0 || hours > 24) throw new Error('Hours must be between 0 and 24');
   await dbUpsert(userId, date, hours);
@@ -19,6 +20,7 @@ export async function upsertWfhEntry(date: string, hours: number): Promise<void>
 }
 
 export async function deleteWfhEntry(date: string): Promise<void> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Invalid date format');
   const userId = await getUser();
   await dbDelete(userId, date);
   revalidatePath('/income/wfh');

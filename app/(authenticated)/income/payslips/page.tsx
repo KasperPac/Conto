@@ -57,9 +57,9 @@ export default async function PayslipsPage() {
               <PayslipLinkPanel
                 linkId={p.linkId}
                 depositDate={p.linkedDepositDate ?? ''}
-                depositDesc=""
+                depositDesc={p.linkedDepositDesc ?? ''}
                 depositAmountFormatted={fmt(p.netCents)}
-                confidence={0.70}
+                confidence={p.linkConfidence ?? 0.70}
               />
             )}
           </li>

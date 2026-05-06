@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server';
 import { putReceiptObject } from '@/lib/storage/put-receipt';
+import { deleteReceiptObject } from '@/lib/storage/delete-receipt';
 import { withUser } from '@/lib/db/client';
 import { transactions } from '@/lib/db/schema';
 
@@ -28,13 +29,15 @@ export async function POST(req: Request): Promise<Response> {
   if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: `Unsupported content type: ${file.type}` }, { status: 400 });
   if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: 'File must be under 10 MB' }, { status: 400 });
 
-  // Verify transaction ownership
+  // Verify transaction ownership and fetch existing receipt key
   const [tx] = await withUser(userId, db =>
-    db.select({ id: transactions.id })
+    db.select({ id: transactions.id, receiptObjectKey: transactions.receiptObjectKey })
       .from(transactions)
       .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId))),
   );
   if (!tx) return NextResponse.json({ error: 'Transaction not found' }, { status: 403 });
+
+  const oldKey = tx.receiptObjectKey;
 
   const body = Buffer.from(await file.arrayBuffer());
   let key: string;
@@ -50,6 +53,11 @@ export async function POST(req: Request): Promise<Response> {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes('Unsupported') || msg.includes('10 MB')) return NextResponse.json({ error: msg }, { status: 400 });
     return NextResponse.json({ error: 'Upload failed', detail: msg }, { status: 502 });
+  }
+
+  // Best-effort delete of old R2 object
+  if (oldKey) {
+    await deleteReceiptObject(oldKey).catch(() => {});
   }
 
   await withUser(userId, db =>

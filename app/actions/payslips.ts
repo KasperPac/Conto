@@ -33,14 +33,16 @@ export async function confirmIncomeLink(linkId: string): Promise<void> {
 export async function dismissIncomeLink(linkId: string): Promise<void> {
   const userId = await getUser();
   await withUser(userId, async (tx) => {
-    const [deleted] = await tx.delete(transactionLinks)
+    const [updated] = await tx
+      .update(transactionLinks)
+      .set({ source: 'dismissed' })
       .where(and(
         eq(transactionLinks.id, linkId),
         eq(transactionLinks.userId, userId),
         eq(transactionLinks.linkType, 'income'),
       ))
       .returning({ id: transactionLinks.id });
-    if (!deleted) throw new Error('Link not found');
+    if (!updated) throw new Error('Link not found');
   });
   revalidatePath('/income/payslips');
 }

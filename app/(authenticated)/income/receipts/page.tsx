@@ -7,14 +7,14 @@ import { fyBounds, currentFyYear } from '@/lib/domain/fy';
 
 interface Props { searchParams: Promise<Record<string, string>> }
 
-const CURRENT_FY = currentFyYear();
-const FY_RANGE = [CURRENT_FY, CURRENT_FY - 1, CURRENT_FY - 2];
-
 function fmt(cents: bigint): string {
   return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(Number(cents) / 100);
 }
 
 export default async function ReceiptsPage({ searchParams }: Props) {
+  const CURRENT_FY = currentFyYear();
+  const FY_RANGE = [CURRENT_FY, CURRENT_FY - 1, CURRENT_FY - 2];
+
   let userId: string;
   try { userId = await getCurrentUserId(); }
   catch (e) { if (e instanceof UnauthenticatedError) redirect('/sign-in'); throw e; }
