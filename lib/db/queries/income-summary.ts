@@ -56,10 +56,10 @@ export async function getIncomeByMonth(userId: string, start: string, end: strin
     const rows = await tx
       .select({
         month:      sql<string>`to_char(pay_date, 'YYYY-MM')`,
-        grossCents: sql<bigint>`sum(gross_cents)::bigint`,
-        taxCents:   sql<bigint>`sum(tax_withheld_cents)::bigint`,
-        superCents: sql<bigint>`sum(super_cents)::bigint`,
-        netCents:   sql<bigint>`sum(net_cents)::bigint`,
+        grossCents: sql<bigint>`coalesce(sum(gross_cents), 0)::bigint`,
+        taxCents:   sql<bigint>`coalesce(sum(tax_withheld_cents), 0)::bigint`,
+        superCents: sql<bigint>`coalesce(sum(super_cents), 0)::bigint`,
+        netCents:   sql<bigint>`coalesce(sum(net_cents), 0)::bigint`,
       })
       .from(payslips)
       .where(and(eq(payslips.userId, userId), between(payslips.payDate, start, end)))
