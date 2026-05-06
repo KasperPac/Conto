@@ -26,7 +26,7 @@ export async function applyScenarioAction(goalId: string, scenario: Scenario): P
       await upsertBudget(userId, {
         categoryId: item.id,
         period: 'weekly',
-        amountCents: item.newWeeklyBudgetCents as unknown as bigint,
+        amountCents: item.newWeeklyBudgetCents,
         effectiveFrom,
         fromGoalId: goalId,
       });
