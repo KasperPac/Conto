@@ -1,3 +1,5 @@
+import { fyBounds, fyYear } from '@/lib/domain/fy'
+
 export interface FYRange {
   start: string  // 'YYYY-MM-DD'
   end: string    // 'YYYY-MM-DD'
@@ -5,13 +7,7 @@ export interface FYRange {
 
 export function currentFY(date?: Date): FYRange {
   const d = date ?? new Date()
-  const month = d.getMonth() + 1  // 1-based
-  const year = d.getFullYear()
-  const fyYear = month < 7 ? year - 1 : year
-  return {
-    start: `${fyYear}-07-01`,
-    end: `${fyYear + 1}-06-30`,
-  }
+  return fyBounds(fyYear(d))
 }
 
 // Formats FY start date as "2025–26" (en-dash U+2013)

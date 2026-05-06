@@ -4,11 +4,6 @@ import { payslips, transactions, categories, merchants } from '@/lib/db/schema'
 import { toCents } from '@/lib/types/money'
 import type { Cents } from '@/lib/types/money'
 
-function toBigInt(v: unknown): bigint {
-  if (typeof v === 'bigint') return v
-  return BigInt(v as string)
-}
-
 export interface SuperPayslipRow {
   id: string
   payDate: string
@@ -51,8 +46,8 @@ export async function getSuperCapData(
     let totalSalSac = 0n
 
     const payslipRows: SuperPayslipRow[] = rows.map(row => {
-      const superAmt = toBigInt(row.superCents)
-      const salSacAmt = toBigInt(row.salarySacrificeCents)
+      const superAmt = row.superCents
+      const salSacAmt = row.salarySacrificeCents
       runningTotal += superAmt + salSacAmt
       totalSuper += superAmt
       totalSalSac += salSacAmt
@@ -115,7 +110,7 @@ export async function getDonationData(
 
     let total = 0n
     const donationRows: DonationRow[] = rows.map(row => {
-      const amountCents = toCents(-toBigInt(row.amountCents))  // negate: spending is negative in DB
+      const amountCents = toCents(-row.amountCents)  // negate: spending is negative in DB
       total += amountCents
       return {
         id: row.id,
