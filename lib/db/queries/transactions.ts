@@ -88,6 +88,9 @@ export async function getTransactions(userId: string, accountId: string, filter:
       categoryId:            transactions.categoryId,
       categoryName:          categories.name,
       isExcludedFromSpending: transactions.isExcludedFromSpending,
+      receiptObjectKey: transactions.receiptObjectKey,
+      receiptFilename: transactions.receiptFilename,
+      receiptContentType: transactions.receiptContentType,
       linkType: sql<string | null>`COALESCE(${fl.linkType}, ${tl.linkType})`,
     })
     .from(transactions)

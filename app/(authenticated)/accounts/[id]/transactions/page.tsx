@@ -7,6 +7,8 @@ import { db } from '@/lib/db/client';
 import { categories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { ReclassifyButton } from '@/components/reclassify-modal';
+import { getReceiptSignedUrl } from '@/lib/storage/get-signed-url';
+import { ReceiptCell } from '@/components/receipt-cell';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -57,6 +59,15 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
   const account = allAccounts.find(a => a.id === id);
   const hasNextPage = rows.length > 50;
   const displayRows = hasNextPage ? rows.slice(0, 50) : rows;
+
+  const signedUrls = await Promise.all(
+    displayRows.map(async r =>
+      r.receiptObjectKey
+        ? { id: r.id, url: await getReceiptSignedUrl(r.receiptObjectKey).catch(() => null) }
+        : { id: r.id, url: null }
+    )
+  );
+  const signedUrlMap = new Map(signedUrls.map(s => [s.id, s.url]));
 
   const buildUrl = (overrides: Record<string, string>) => {
     const p = new URLSearchParams({ ...sp, ...overrides });
@@ -112,6 +123,7 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
                 <th className="py-2 pr-4 font-medium">Category</th>
                 <th className="py-2 pr-4 font-medium text-right">Amount</th>
                 <th className="py-2 font-medium text-right">Balance</th>
+                <th className="px-2 py-2 text-center text-xs font-medium text-zinc-500">📎</th>
               </tr>
             </thead>
             <tbody>
@@ -141,6 +153,15 @@ export default async function TransactionsPage({ params, searchParams }: Props) 
                   </td>
                   <td className="py-2 text-right tabular-nums text-zinc-500">
                     {formatBalance(row.balanceAfterCents)}
+                  </td>
+                  <td className="px-2 text-center">
+                    <ReceiptCell
+                      transactionId={row.id}
+                      hasReceipt={!!row.receiptObjectKey}
+                      signedUrl={signedUrlMap.get(row.id) ?? undefined}
+                      filename={row.receiptFilename ?? undefined}
+                      contentType={row.receiptContentType ?? undefined}
+                    />
                   </td>
                 </tr>
               ))}
