@@ -133,7 +133,7 @@ describe('goals queries', () => {
     expect(unchanged!.name).toBe('Europe Travel');
   });
 
-  it('deleteGoal removes the row', async () => {
+  it('deleteGoal soft-deletes the row (status = deleted, excluded from getGoals)', async () => {
     const [inserted] = await testDb.insert(goals).values({
       userId,
       name: 'Delete Me',
@@ -145,7 +145,13 @@ describe('goals queries', () => {
 
     await deleteGoal(userId, inserted!.id);
 
+    // Row still exists in DB
     const rows = await testDb.select().from(goals).where(eq(goals.id, inserted!.id));
-    expect(rows).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.status).toBe('deleted');
+
+    // Soft-deleted goal is excluded from getGoals
+    const active = await getGoals(userId);
+    expect(active).toHaveLength(0);
   });
 });

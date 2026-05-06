@@ -25,7 +25,7 @@ function median(values: bigint[]): bigint {
   return sorted[mid]!;
 }
 
-export async function getTradeoffInputs(userId: string): Promise<TradeoffInput> {
+export async function getTradeoffInputs(userId: string): Promise<Omit<TradeoffInput, 'weeklyTargetCents'>> {
   return withUser(userId, async (tx) => {
     // ─── Surplus ──────────────────────────────────────────────────────────────
     // Last 3 full calendar months
@@ -227,7 +227,6 @@ export async function getTradeoffInputs(userId: string): Promise<TradeoffInput> 
     return {
       weeklySurplusCents: toCents(weeklySurplus),
       projectionSurplusCents: toCents(projectionSurplus),
-      weeklyTargetCents: toCents(BigInt(0)),
       subscriptions,
       categorySpending,
     };

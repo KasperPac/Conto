@@ -3,6 +3,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createGoalAction } from '@/app/actions/goals';
 
+function dollarsToCents(s: string): number {
+  const [intPart = '0', fracPart = ''] = s.trim().split('.');
+  const cents = fracPart.padEnd(2, '0').slice(0, 2);
+  return parseInt(intPart) * 100 + parseInt(cents || '0');
+}
+
 interface Account {
   id: string;
   name: string;
@@ -32,11 +38,11 @@ export function AddGoalModal({ accounts }: AddGoalModalProps) {
     fd.append('goalType', goalType);
     fd.append('name', name);
     if (goalType === 'savings') {
-      fd.append('targetAmountCents', String(Math.round(parseFloat(targetAmount || '0') * 100)));
+      fd.append('targetAmountCents', String(dollarsToCents(targetAmount || '0')));
       if (targetDate) fd.append('targetDate', targetDate);
       if (linkedAccountId) fd.append('linkedAccountId', linkedAccountId);
     } else {
-      fd.append('weeklyCostCents', String(Math.round(parseFloat(weeklyAmount || '0') * 100)));
+      fd.append('weeklyCostCents', String(dollarsToCents(weeklyAmount || '0')));
     }
     try {
       await createGoalAction(fd);
