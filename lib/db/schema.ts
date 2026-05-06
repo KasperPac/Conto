@@ -257,7 +257,7 @@ export const payCadences = pgTable('pay_cadences', {
 export const expectedEvents = pgTable('expected_events', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
-  accountId: uuid('account_id').notNull().references(() => accounts.id),
+  accountId: uuid('account_id').references(() => accounts.id),
   source: text('source').notNull(),
   sourceId: uuid('source_id'),
   expectedDate: date('expected_date').notNull(),

@@ -39,7 +39,7 @@ export interface PayCadenceCandidate {
 export interface ExpectedEvent {
   id: ExpectedEventId;
   userId: string;
-  accountId: string;
+  accountId: string | null;
   source: ExpectedEventSource;
   sourceId: string | null;
   expectedDate: string;
