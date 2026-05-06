@@ -109,7 +109,7 @@ async function selectGoals(tx: Database, userId: string, extraWhere?: SQL): Prom
 
 export async function getGoals(userId: string): Promise<Goal[]> {
   return withUser(userId, async (tx) => {
-    return selectGoals(tx, userId, not(inArray(goals.status, ['achieved', 'abandoned'])));
+    return selectGoals(tx, userId, not(inArray(goals.status, ['achieved', 'abandoned', 'deleted'])));
   });
 }
 
@@ -166,9 +166,5 @@ export async function updateGoal(userId: string, id: string, patch: GoalPatch): 
 }
 
 export async function deleteGoal(userId: string, id: string): Promise<void> {
-  await withUser(userId, async (tx) => {
-    await tx
-      .delete(goals)
-      .where(and(eq(goals.id, id), eq(goals.userId, userId)));
-  });
+  await updateGoal(userId, id, { status: 'deleted' });
 }

@@ -50,8 +50,8 @@ export default async function GoalDetailPage({
 
   // ─── Savings goal variant ──────────────────────────────────────────────────
   if (goal.goalType === 'savings') {
-    const targetRaw = goal.targetAmountCents as unknown as bigint;
-    const currentRaw = goal.currentAmountCents as unknown as bigint;
+    const targetRaw = goal.targetAmountCents;
+    const currentRaw = goal.currentAmountCents;
 
     const pct =
       targetRaw === 0n
@@ -59,11 +59,13 @@ export default async function GoalDetailPage({
         : Math.min(100, Math.round(Number((currentRaw * 100n) / targetRaw)));
 
     const elapsed = monthsSince(goal.createdAt);
-    const monthlyPace = currentRaw / BigInt(elapsed);
+    const monthlyPace = (currentRaw + BigInt(elapsed) / 2n) / BigInt(elapsed);
     const remaining = targetRaw - currentRaw;
     const mLeft = goal.targetDate ? monthsUntil(goal.targetDate) : null;
     const requiredPace =
-      mLeft !== null && mLeft > 0 ? remaining / BigInt(mLeft) : null;
+      mLeft !== null && mLeft > 0
+        ? (remaining + BigInt(mLeft) / 2n) / BigInt(mLeft)
+        : null;
     const projectedMonths =
       monthlyPace > 0n ? Number(remaining / monthlyPace) : null;
     const onTrack =
@@ -236,7 +238,6 @@ export default async function GoalDetailPage({
     weeklyTargetCents: weeklyCostCents,
   });
   const historicalSurplus = tradeoffInputs.weeklySurplusCents;
-  const costRaw = weeklyCostCents as unknown as bigint;
 
   return (
     <div className="max-w-xl">
@@ -259,7 +260,7 @@ export default async function GoalDetailPage({
           )}
         </div>
         <p className="text-sm text-zinc-500 mt-1">
-          Target cost: +{fmt(costRaw)}/wk
+          Target cost: +{fmt(weeklyCostCents)}/wk
         </p>
       </div>
 

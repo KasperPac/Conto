@@ -3,26 +3,9 @@ import { withUser } from '@/lib/db/client';
 import { budgets, categories, expectedEvents, merchants, recurrenceGroups, transactions } from '@/lib/db/schema';
 import { toCents } from '@/lib/types/money';
 import type { Cents } from '@/lib/types/money';
+import type { TradeoffInput } from '@/lib/domain/tradeoff';
 
-// Inline definition — must be compatible with lib/domain/tradeoff.ts when it is created
-export interface TradeoffInput {
-  weeklySurplusCents: Cents;
-  projectionSurplusCents: Cents;
-  weeklyTargetCents: Cents;
-  subscriptions: Array<{
-    id: string;
-    name: string;
-    weeklyEquivalentCents: Cents;
-  }>;
-  categorySpending: Array<{
-    categoryId: string;
-    categoryName: string;
-    isEssential: boolean;
-    threeMonthAvgWeeklyCents: Cents;
-    threeMonthMedianWeeklyCents: Cents;
-    currentBudgetCents: Cents | null;
-  }>;
-}
+export type { TradeoffInput };
 
 function cadenceToWeeklyMultiplier(cadence: string, amountCents: bigint): bigint {
   switch (cadence) {

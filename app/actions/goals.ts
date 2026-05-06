@@ -2,6 +2,14 @@
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server';
 import { createGoal, updateGoal, deleteGoal } from '@/lib/db/queries/goals';
+import { toCents } from '@/lib/types/money';
+
+function dollarsToCents(s: string): bigint {
+  const trimmed = s.trim();
+  const [intPart = '0', fracPart = ''] = trimmed.split('.');
+  const cents = fracPart.padEnd(2, '0').slice(0, 2);
+  return BigInt(intPart) * 100n + BigInt(cents || '0');
+}
 
 async function getUser(): Promise<string> {
   try { return await getCurrentUserId(); }
@@ -56,7 +64,7 @@ export async function updateCurrentAmountFormAction(goalId: string, formData: Fo
   const userId = await getUser();
   const dollarsStr = formData.get('currentAmountDollars') as string | null;
   if (!dollarsStr || dollarsStr.trim() === '') return;
-  const cents = BigInt(Math.round(parseFloat(dollarsStr) * 100));
+  const cents = toCents(dollarsToCents(dollarsStr));
   await updateGoal(userId, goalId, { currentAmountCents: cents });
   revalidatePath(`/plan/goals/${goalId}`);
 }

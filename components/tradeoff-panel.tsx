@@ -30,9 +30,7 @@ export function TradeoffPanel({
   const [applied, setApplied] = useState<string | null>(null);
 
   const surplusCents = mode === 'historical' ? historicalSurplusCents : projectionSurplusCents;
-  const surplusRaw = surplusCents as unknown as bigint;
-  const costRaw = weeklyCostCents as unknown as bigint;
-  const gap = costRaw - surplusRaw;
+  const gap = weeklyCostCents - surplusCents;
   const covered = gap <= 0n;
 
   async function handleApply(scenario: Scenario) {
@@ -77,9 +75,9 @@ export function TradeoffPanel({
           </div>
         </div>
 
-        <p className={`text-3xl font-bold ${surplusRaw >= 0n ? 'text-green-600' : 'text-red-600'}`}>
-          {surplusRaw >= 0n ? '+' : ''}{fmt(surplusRaw < 0n ? -surplusRaw : surplusRaw)}/wk
-          {surplusRaw < 0n && <span className="text-red-600"> (−)</span>}
+        <p className={`text-3xl font-bold ${surplusCents >= 0n ? 'text-green-600' : 'text-red-600'}`}>
+          {surplusCents >= 0n ? '+' : ''}{fmt(surplusCents < 0n ? -surplusCents : surplusCents)}/wk
+          {surplusCents < 0n && <span className="text-red-600"> (−)</span>}
         </p>
 
         {mode === 'historical' && (
@@ -119,8 +117,6 @@ export function TradeoffPanel({
                 {scenarios.map(scenario => {
                   const isApplied = applied === scenario.label;
                   const isApplying = applying === scenario.label;
-                  const gainRaw = scenario.totalWeeklyGainCents as unknown as bigint;
-
                   return (
                     <div key={scenario.label} className="border rounded-lg p-4">
                       {/* Header row */}
@@ -129,7 +125,7 @@ export function TradeoffPanel({
                           {scenario.label}
                         </span>
                         <span className="text-sm font-semibold text-green-600">
-                          +{fmt(gainRaw)}/wk
+                          +{fmt(scenario.totalWeeklyGainCents)}/wk
                         </span>
                       </div>
 
@@ -140,7 +136,7 @@ export function TradeoffPanel({
                             {item.kind === 'subscription' ? (
                               <>
                                 Based on your spending, you could free up{' '}
-                                {fmt(item.weeklyGainCents as unknown as bigint)}/wk by cancelling{' '}
+                                {fmt(item.weeklyGainCents)}/wk by cancelling{' '}
                                 {item.name} &rarr;{' '}
                                 <Link
                                   href="/subscriptions"
@@ -153,9 +149,9 @@ export function TradeoffPanel({
                               <>
                                 Reduce {item.name} budget to{' '}
                                 {item.newWeeklyBudgetCents !== undefined
-                                  ? fmt(item.newWeeklyBudgetCents as unknown as bigint)
+                                  ? fmt(item.newWeeklyBudgetCents)
                                   : '—'}
-                                /wk (saves {fmt(item.weeklyGainCents as unknown as bigint)}/wk)
+                                /wk (saves {fmt(item.weeklyGainCents)}/wk)
                               </>
                             )}
                           </li>

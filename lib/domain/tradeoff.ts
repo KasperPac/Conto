@@ -2,6 +2,7 @@ import { toCents, type Cents } from '@/lib/types/money';
 
 export interface TradeoffInput {
   weeklySurplusCents: Cents;
+  projectionSurplusCents: Cents;
   weeklyTargetCents: Cents;
   subscriptions: Array<{ id: string; name: string; weeklyEquivalentCents: Cents }>;
   categorySpending: Array<{
@@ -34,14 +35,14 @@ function greedyCover(candidates: ScenarioItem[], gap: bigint): ScenarioItem[] | 
   const picked: ScenarioItem[] = [];
   for (const c of candidates) {
     picked.push(c);
-    accumulated += c.weeklyGainCents as unknown as bigint;
+    accumulated += c.weeklyGainCents;
     if (accumulated >= gap) return picked;
   }
   return null;
 }
 
 function totalGain(items: ScenarioItem[]): Cents {
-  const sum = items.reduce((acc, i) => acc + (i.weeklyGainCents as unknown as bigint), 0n);
+  const sum = items.reduce((acc, i) => acc + i.weeklyGainCents, 0n);
   return toCents(sum);
 }
 
@@ -51,9 +52,7 @@ function scenarioKey(items: ScenarioItem[]): string {
 }
 
 export function computeTradeoffScenarios(input: TradeoffInput): Scenario[] {
-  const gap =
-    (input.weeklyTargetCents as unknown as bigint) -
-    (input.weeklySurplusCents as unknown as bigint);
+  const gap = input.weeklyTargetCents - input.weeklySurplusCents;
 
   if (gap <= 0n) return [];
 
@@ -62,9 +61,7 @@ export function computeTradeoffScenarios(input: TradeoffInput): Scenario[] {
   // Tier 1: subscriptions sorted descending by weekly cost
   const tier1: ScenarioItem[] = [...input.subscriptions]
     .sort((a, b) => {
-      const diff =
-        (b.weeklyEquivalentCents as unknown as bigint) -
-        (a.weeklyEquivalentCents as unknown as bigint);
+      const diff = b.weeklyEquivalentCents - a.weeklyEquivalentCents;
       return diff > 0n ? 1 : diff < 0n ? -1 : 0;
     })
     .map(s => ({
@@ -76,8 +73,8 @@ export function computeTradeoffScenarios(input: TradeoffInput): Scenario[] {
 
   // Tier 2 & 3: categories where avg > median, sorted descending by cuttable amount
   const buildCatItem = (c: TradeoffInput['categorySpending'][number]): ScenarioItem | null => {
-    const avg = c.threeMonthAvgWeeklyCents as unknown as bigint;
-    const med = c.threeMonthMedianWeeklyCents as unknown as bigint;
+    const avg = c.threeMonthAvgWeeklyCents;
+    const med = c.threeMonthMedianWeeklyCents;
     if (avg <= med) return null;
     return {
       kind: 'category_budget' as const,
@@ -89,9 +86,7 @@ export function computeTradeoffScenarios(input: TradeoffInput): Scenario[] {
   };
 
   const sortByGainDesc = (a: ScenarioItem, b: ScenarioItem) => {
-    const diff =
-      (b.weeklyGainCents as unknown as bigint) -
-      (a.weeklyGainCents as unknown as bigint);
+    const diff = b.weeklyGainCents - a.weeklyGainCents;
     return diff > 0n ? 1 : diff < 0n ? -1 : 0;
   };
 
@@ -135,7 +130,7 @@ export function computeTradeoffScenarios(input: TradeoffInput): Scenario[] {
     const buildMixed = (subIndex: number): ScenarioItem[] | null => {
       const sub = tier1[subIndex];
       if (!sub) return null;
-      const subGain = sub.weeklyGainCents as unknown as bigint;
+      const subGain = sub.weeklyGainCents;
       const remaining = gap - subGain;
       if (remaining <= 0n) {
         // Sub alone covers gap — not a useful mixed scenario
@@ -156,3 +151,4 @@ export function computeTradeoffScenarios(input: TradeoffInput): Scenario[] {
 
   return scenarios;
 }
+
