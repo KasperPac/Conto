@@ -10,9 +10,11 @@ function fmt(cents: bigint): string {
 }
 
 const DEDUCTION_LABELS: Record<string, string> = {
-  wfh: 'Work from home',
+  wfh: 'Working from home',
   donation: 'Donations (DGR)',
-  investment: 'Investment expenses',
+  work_tools: 'Work tools & equipment',
+  motor_vehicle: 'Motor vehicle',
+  professional_sub: 'Professional subscriptions',
   other: 'Other deductions',
 }
 
@@ -57,7 +59,7 @@ export default async function TaxEstimatePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">Tax Estimate — FY {fyYear - 1}–{String(fyYear).slice(2)}</h1>
+      <h1 className="text-2xl font-semibold mb-6">Tax Estimate — FY {fyShortLabel}</h1>
 
       {estimate === null ? (
         <div className="rounded-lg border border-dashed p-8 text-center text-zinc-500">
@@ -91,18 +93,26 @@ export default async function TaxEstimatePage() {
               <p className="text-sm text-zinc-500">No deductible expenses categorised yet.</p>
             ) : (
               <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-zinc-500">
+                    <th className="pb-2 font-normal">Category</th>
+                    <th className="pb-2 font-normal text-right">Amount</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {deductibleTotals.byKind.map(k => (
-                    <tr key={k.deductionKind} className="border-b last:border-0">
+                    <tr key={k.deductionKind} className="border-t">
                       <td className="py-2">{deductionLabel(k.deductionKind)}</td>
                       <td className="py-2 text-right">{fmt(k.totalCents)}</td>
                     </tr>
                   ))}
-                  <tr className="font-medium">
+                </tbody>
+                <tfoot>
+                  <tr className="border-t font-medium">
                     <td className="pt-3">Total deductions</td>
                     <td className="pt-3 text-right">{fmt(deductibleTotals.grandTotalCents)}</td>
                   </tr>
-                </tbody>
+                </tfoot>
               </table>
             )}
           </div>
@@ -132,13 +142,13 @@ export default async function TaxEstimatePage() {
               Based on fewer than 26 weeks of payslips — estimate will be more accurate later in the FY.
             </p>
           )}
-
-          {/* Disclaimer */}
-          <p className="text-xs text-zinc-400 mt-4">
-            Estimated based on your data. General information only — not tax advice. Consult a registered tax professional.
-          </p>
         </div>
       )}
+
+      {/* Disclaimer */}
+      <p className="text-xs text-zinc-400 mt-6">
+        Estimated based on your data. General information only — not tax advice. Consult a registered tax professional.
+      </p>
     </div>
   )
 }
