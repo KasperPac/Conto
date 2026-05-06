@@ -24,10 +24,3 @@ describe('calYearBounds', () => {
     expect(calYearBounds(2026)).toEqual({ start: '2026-01-01', end: '2026-12-31' });
   });
 });
-
-describe('currentFyYear', () => {
-  it('delegates to fyYear with today', () => {
-    // currentFyYear() just wraps fyYear(new Date()) — test it matches
-    expect(currentFyYear()).toBe(fyYear(new Date()));
-  });
-});

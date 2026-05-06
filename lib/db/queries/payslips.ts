@@ -101,17 +101,21 @@ export async function getPayslipsForLinkingJob(
   userId: string,
 ): Promise<Array<{ id: string; payDate: string; netCents: Cents; employer: string }>> {
   return withUser(userId, async (tx) => {
+    const linkedIds = tx
+      .select({ payslipId: transactionLinks.payslipId })
+      .from(transactionLinks)
+      .where(and(
+        eq(transactionLinks.userId, userId),
+        eq(transactionLinks.linkType, 'income'),
+        isNotNull(transactionLinks.payslipId),
+      ));
+
     const rows = await tx
       .select({ id: payslips.id, payDate: payslips.payDate, netCents: payslips.netCents, employer: payslips.employer })
       .from(payslips)
       .where(and(
         eq(payslips.userId, userId),
-        sql`NOT EXISTS (
-          SELECT 1 FROM transaction_links tl
-          WHERE tl.payslip_id = ${payslips.id}
-            AND tl.user_id = ${userId}
-            AND tl.link_type = 'income'
-        )`,
+        sql`${payslips.id} NOT IN (${linkedIds})`,
       ));
     return rows.map(r => ({ ...r, netCents: toCents(r.netCents) }));
   });
