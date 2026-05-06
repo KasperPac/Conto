@@ -3,6 +3,7 @@
 import { useState, startTransition } from 'react';
 import { upsertBudgetAction, deactivateBudgetAction } from '@/app/actions/budgets';
 import type { Cents } from '@/lib/types/money';
+import { toCents } from '@/lib/types/money';
 
 interface BudgetRowProps {
   id: string;
@@ -68,9 +69,8 @@ export function BudgetRow({
 
   const status = computeStatus(spentCents, amountCents, daysElapsed, daysInPeriod);
 
-  const pct = amountCents > 0n
-    ? Math.min(100, Math.round(Number((spentCents * 100n) / amountCents)))
-    : 0;
+  const pctBig = amountCents > 0n ? (spentCents * 100n) / amountCents : 0n;
+  const pct = Number(pctBig > 100n ? 100n : pctBig);
 
   const barColor =
     status === 'Over' ? 'bg-red-500' :
@@ -83,18 +83,29 @@ export function BudgetRow({
     'bg-green-100 text-green-700';
 
   function handleUpdate() {
-    setPending(true);
+    let parsed: bigint;
+    try {
+      parsed = dollarsToCents(amountInput);
+    } catch {
+      // Non-numeric input — do nothing, user can correct
+      return;
+    }
+    if (parsed <= 0n) {
+      // Negative or zero amount not allowed
+      return;
+    }
     startTransition(async () => {
+      setPending(true);
       try {
         await upsertBudgetAction({
           categoryId,
           period,
-          amountCents: dollarsToCents(amountInput),
+          amountCents: toCents(parsed),
           effectiveFrom: todayYMD(),
         });
+        setIsEditing(false);
       } finally {
         setPending(false);
-        setIsEditing(false);
       }
     });
   }
