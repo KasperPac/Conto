@@ -5,7 +5,7 @@ import { getGoalById } from '@/lib/db/queries/goals';
 import { getTradeoffInputs } from '@/lib/db/queries/tradeoff';
 import { computeTradeoffScenarios } from '@/lib/domain/tradeoff';
 import { TradeoffPanel } from '@/components/tradeoff-panel';
-import { markGoalAchievedAction, abandonGoalAction } from '@/app/actions/goals';
+import { markGoalAchievedAction, abandonGoalAction, updateCurrentAmountFormAction } from '@/app/actions/goals';
 import { toCents } from '@/lib/types/money';
 
 function fmt(cents: bigint): string {
@@ -149,6 +149,33 @@ export default async function GoalDetailPage({
           </div>
         </div>
 
+        {/* Inline edit: current amount (only when not linked to an account) */}
+        {goal.linkedAccountId === null && (
+          <form
+            action={updateCurrentAmountFormAction.bind(null, goal.id)}
+            className="flex items-center gap-2 mb-6"
+          >
+            <label htmlFor="currentAmountDollars" className="text-sm text-zinc-600 shrink-0">
+              Update saved amount:
+            </label>
+            <input
+              id="currentAmountDollars"
+              name="currentAmountDollars"
+              type="number"
+              min="0"
+              step="0.01"
+              defaultValue={(Number(currentRaw) / 100).toFixed(2)}
+              className="w-36 text-sm border border-zinc-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            />
+            <button
+              type="submit"
+              className="text-sm bg-zinc-900 text-white px-3 py-1.5 rounded-md hover:bg-zinc-700"
+            >
+              Update
+            </button>
+          </form>
+        )}
+
         {/* Projection callout */}
         {projectedMonths !== null && (
           <div
@@ -163,7 +190,12 @@ export default async function GoalDetailPage({
                 onTrack || requiredPace === null ? 'text-green-800' : 'text-amber-800'
               }`}
             >
-              At current pace you&apos;ll reach {fmt(targetRaw)} in ~{projectedMonths} months
+              {(() => {
+                const projectedDate = new Date();
+                projectedDate.setMonth(projectedDate.getMonth() + projectedMonths);
+                const dateStr = projectedDate.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' });
+                return <>At current pace you&apos;ll reach {fmt(targetRaw)} by {dateStr}</>;
+              })()}
               {aheadBehind !== null && aheadBehind !== 0
                 ? aheadBehind > 0
                   ? ` — ${Math.round(aheadBehind)} months ahead of target`
@@ -236,7 +268,7 @@ export default async function GoalDetailPage({
         goalId={goal.id}
         weeklyCostCents={weeklyCostCents}
         historicalSurplusCents={historicalSurplus}
-        projectionSurplusCents={historicalSurplus}
+        projectionSurplusCents={tradeoffInputs.projectionSurplusCents}
         scenarios={scenarios}
       />
     </div>

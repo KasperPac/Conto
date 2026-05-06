@@ -1,12 +1,13 @@
 import { and, eq, isNull, ne, or, sql } from 'drizzle-orm';
 import { withUser } from '@/lib/db/client';
-import { budgets, categories, merchants, recurrenceGroups, transactions } from '@/lib/db/schema';
+import { budgets, categories, expectedEvents, merchants, recurrenceGroups, transactions } from '@/lib/db/schema';
 import { toCents } from '@/lib/types/money';
 import type { Cents } from '@/lib/types/money';
 
 // Inline definition — must be compatible with lib/domain/tradeoff.ts when it is created
 export interface TradeoffInput {
   weeklySurplusCents: Cents;
+  projectionSurplusCents: Cents;
   weeklyTargetCents: Cents;
   subscriptions: Array<{
     id: string;
@@ -209,8 +210,40 @@ export async function getTradeoffInputs(userId: string): Promise<TradeoffInput> 
       };
     });
 
+    // ─── Projection surplus from expected_events (next 30 days) ──────────────
+    const eventRows = await tx
+      .select({
+        sumPositive: sql<bigint>`coalesce(sum(case when ${expectedEvents.expectedAmountCents} > 0 then ${expectedEvents.expectedAmountCents} else 0 end), 0)::bigint`,
+        sumNegative: sql<bigint>`coalesce(sum(case when ${expectedEvents.expectedAmountCents} < 0 then ${expectedEvents.expectedAmountCents} else 0 end), 0)::bigint`,
+      })
+      .from(expectedEvents)
+      .where(
+        and(
+          eq(expectedEvents.userId, userId),
+          eq(expectedEvents.status, 'pending'),
+          or(
+            isNull(expectedEvents.snoozedUntil),
+            sql`${expectedEvents.snoozedUntil} <= current_date`,
+          ),
+          sql`${expectedEvents.expectedDate}::date >= current_date`,
+          sql`${expectedEvents.expectedDate}::date < current_date + interval '30 days'`,
+        ),
+      );
+
+    let projectionSurplus = weeklySurplus;
+    if (eventRows[0]) {
+      const row = eventRows[0];
+      const sumPos = typeof row.sumPositive === 'bigint' ? row.sumPositive : BigInt(row.sumPositive as unknown as string);
+      const sumNeg = typeof row.sumNegative === 'bigint' ? row.sumNegative : BigInt(row.sumNegative as unknown as string);
+      // sumNeg is already negative; net = sumPos + sumNeg
+      const netCents = sumPos + sumNeg;
+      // Convert 30-day net to weekly: * 7 / 30
+      projectionSurplus = (netCents * 7n) / 30n;
+    }
+
     return {
       weeklySurplusCents: toCents(weeklySurplus),
+      projectionSurplusCents: toCents(projectionSurplus),
       weeklyTargetCents: toCents(BigInt(0)),
       subscriptions,
       categorySpending,

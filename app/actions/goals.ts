@@ -52,6 +52,15 @@ export async function updateCurrentAmountAction(goalId: string, cents: bigint): 
   revalidatePath(`/plan/goals/${goalId}`);
 }
 
+export async function updateCurrentAmountFormAction(goalId: string, formData: FormData): Promise<void> {
+  const userId = await getUser();
+  const dollarsStr = formData.get('currentAmountDollars') as string | null;
+  if (!dollarsStr || dollarsStr.trim() === '') return;
+  const cents = BigInt(Math.round(parseFloat(dollarsStr) * 100));
+  await updateGoal(userId, goalId, { currentAmountCents: cents });
+  revalidatePath(`/plan/goals/${goalId}`);
+}
+
 export async function markGoalAchievedAction(goalId: string): Promise<void> {
   const userId = await getUser();
   await updateGoal(userId, goalId, { status: 'achieved' });
