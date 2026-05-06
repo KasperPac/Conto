@@ -1,15 +1,15 @@
 import type { PgBoss } from 'pg-boss';
 import { db, withUser } from '@/lib/db/client';
 import { users, expectedEvents } from '@/lib/db/schema';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
 interface TaxEvent {
   date: string; // 'YYYY-MM-DD'
   description: string;
 }
 
-// Generate all ATO tax due dates that fall within [windowStart, windowEnd]
-function generateTaxDates(windowStart: Date, windowEnd: Date): TaxEvent[] {
+// Generate all ATO tax due dates that fall within [windowStartStr, windowEndStr]
+function generateTaxDates(windowStartStr: string, windowEndStr: string): TaxEvent[] {
   // Annual dates: { month: 1-based, day }
   const templates = [
     { month: 10, day: 28, description: 'Q1 BAS due' },
@@ -21,21 +21,17 @@ function generateTaxDates(windowStart: Date, windowEnd: Date): TaxEvent[] {
   ];
 
   const events: TaxEvent[] = [];
-  const startYear = windowStart.getFullYear();
+  const startYear = parseInt(windowStartStr.slice(0, 4), 10);
 
   // Check 3 years to cover an 18-month window
   for (let yearOffset = 0; yearOffset <= 2; yearOffset++) {
     const year = startYear + yearOffset;
     for (const t of templates) {
-      // For Feb: use last day of month to handle leap years
-      const lastDay =
-        t.month === 2 ? new Date(Date.UTC(year, 2, 0)).getUTCDate() : t.day;
-      const date = new Date(Date.UTC(year, t.month - 1, lastDay));
-      if (date >= windowStart && date <= windowEnd) {
-        events.push({
-          date: date.toISOString().slice(0, 10),
-          description: t.description,
-        });
+      const date = new Date(Date.UTC(year, t.month - 1, t.day));
+      const dateStr = date.toISOString().slice(0, 10);
+      // Compare dates as strings (ISO format sorts correctly)
+      if (dateStr >= windowStartStr && dateStr <= windowEndStr) {
+        events.push({ date: dateStr, description: t.description });
       }
     }
   }
@@ -45,11 +41,10 @@ function generateTaxDates(windowStart: Date, windowEnd: Date): TaxEvent[] {
 
 async function materialiseForUser(
   userId: string,
-  windowStart: Date,
-  windowEnd: Date,
+  windowStartStr: string,
+  windowEndStr: string,
 ): Promise<void> {
-  const windowStartStr = windowStart.toISOString().slice(0, 10);
-  const events = generateTaxDates(windowStart, windowEnd);
+  const events = generateTaxDates(windowStartStr, windowEndStr);
 
   await withUser(userId, async (tx) => {
     // Delete only pending future tax events — snoozed/dismissed survive
@@ -64,10 +59,24 @@ async function materialiseForUser(
         ),
       );
 
-    if (events.length === 0) return;
+    // Don't create a new pending row for dates that already have a non-pending row
+    const existingNonPending = await tx
+      .select({ expectedDate: expectedEvents.expectedDate })
+      .from(expectedEvents)
+      .where(
+        and(
+          eq(expectedEvents.userId, userId),
+          eq(expectedEvents.source, 'tax_obligation'),
+          sql`${expectedEvents.status}::text != 'pending'`,
+          sql`${expectedEvents.expectedDate}::date >= ${windowStartStr}::date`,
+        ),
+      );
+    const skipDates = new Set(existingNonPending.map(r => r.expectedDate as string));
+    const toInsert = events.filter(e => !skipDates.has(e.date));
+    if (toInsert.length === 0) return;
 
     await tx.insert(expectedEvents).values(
-      events.map((e) => ({
+      toInsert.map((e) => ({
         userId,
         accountId: null,
         source: 'tax_obligation' as const,
@@ -94,14 +103,15 @@ export async function registerTaxObligations(boss: PgBoss): Promise<void> {
     'materialise-tax-obligations',
     { batchSize: 4, localConcurrency: 1 },
     async (jobs) => {
-      const today = new Date();
-      const windowEnd = new Date(today);
-      windowEnd.setMonth(windowEnd.getMonth() + 18);
+      const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD' UTC
+      const windowEndDate = new Date(todayStr);
+      windowEndDate.setUTCMonth(windowEndDate.getUTCMonth() + 18);
+      const windowEndStr = windowEndDate.toISOString().slice(0, 10);
 
       for (const job of jobs) {
         const { userId } = job.data;
         try {
-          await materialiseForUser(userId, today, windowEnd);
+          await materialiseForUser(userId, todayStr, windowEndStr);
         } catch (err) {
           console.error(
             `[tax-obligations] jobId=${job.id} userId=${userId}`,
