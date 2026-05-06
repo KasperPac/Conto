@@ -50,15 +50,15 @@ describe('estimateTax', () => {
       //     = 509_200n + 487_500n
       //     = 996_700n
       // Medicare = 6_000_000n * 200n / 10000n = 120_000n
-      // LITO at $60k: phases out from $37.5k to $66.667k
-      // LITO = 70_000n - (70_000n * (6_000_000n - 3_750_000n)) / (6_666_700n - 3_750_000n)
-      //      = 70_000n - (70_000n * 2_250_000n) / 2_916_700n
-      //      = 70_000n - 157_500_000_000n / 2_916_700n
-      //      = 70_000n - 54_001n (integer division)
-      //      = 15_999n
-      // Liability = max(0, 996_700 + 120_000 - 15_999) = 1_100_699n
+      // LITO at $60k: Phase 2 (between $45k and $66.667k)
+      // LITO = 32_500n - (6_000_000n - 4_500_000n) * 150n / 10000n
+      //      = 32_500n - 1_500_000n * 150n / 10000n
+      //      = 32_500n - 225_000_000n / 10000n
+      //      = 32_500n - 22_500n
+      //      = 10_000n
+      // Liability = 996_700 + 120_000 - 10_000 = 1_106_700n
       expect(result.projectedTaxableIncomeCents).toBe(6_000_000n);
-      expect(result.estimatedTaxLiabilityCents).toBe(1_100_699n);
+      expect(result.estimatedTaxLiabilityCents).toBe(1_106_700n);
     });
 
     it('applies 37% tax to income in fourth bracket', () => {
@@ -172,7 +172,7 @@ describe('estimateTax', () => {
     });
 
     it('phases out LITO in the range $37,500-$66,667', () => {
-      // Test at midpoint of phase-out range
+      // Test at midpoint of phase-out range: $52,083.50
       const result = estimateTax({
         fyGrossCents: 5_208_350n,
         fyPaygCents: 0n,
@@ -180,8 +180,18 @@ describe('estimateTax', () => {
         weeksElapsed: 52,
         totalFyWeeks: 52,
       });
-      // Verify liability is calculated (exact value depends on rounding)
-      expect(result.estimatedTaxLiabilityCents).toBe(808_580n);
+      // Tax = 509_200n + (5_208_350n - 4_500_000n) * 3250n / 10000n
+      //     = 509_200n + 708_350n * 3250n / 10000n
+      //     = 509_200n + 2_302_137_500n / 10000n
+      //     = 509_200n + 230_213n = 739_413n
+      // Medicare = 5_208_350n * 200n / 10000n = 104_167n
+      // LITO at $52,083.50: Phase 2
+      // LITO = 32_500n - (5_208_350n - 4_500_000n) * 150n / 10000n
+      //      = 32_500n - 708_350n * 150n / 10000n
+      //      = 32_500n - 106_252_500n / 10000n
+      //      = 32_500n - 10_625n = 21_875n
+      // Liability = 739_413n + 104_167n - 21_875n = 821_705n
+      expect(result.estimatedTaxLiabilityCents).toBe(821_705n);
     });
 
     it('fully phases out LITO above $66,667', () => {
@@ -303,13 +313,13 @@ describe('estimateTax', () => {
       //     = 509_200n + 162_500n
       //     = 671_700n
       // Medicare = 5_000_000n * 200n / 10000n = 100_000n
-      // LITO = 70_000n - (70_000n * (5_000_000n - 3_750_000n)) / (6_666_700n - 3_750_000n)
-      //      = 70_000n - (70_000n * 1_250_000n) / 2_916_700n
-      //      = 70_000n - 30_000n
-      //      = 40_000n
-      // Liability = 671_700n + 100_000n - 40_000n = 731_700n
-      // Outcome = 2_000_000n - 731_699n = 1_268_301n (positive = refund, slight rounding difference)
-      expect(result.estimatedOutcomeCents).toBe(1_268_301n);
+      // LITO at $50k: Phase 2
+      // LITO = 32_500n - (5_000_000n - 4_500_000n) * 150n / 10000n
+      //      = 32_500n - 500_000n * 150n / 10000n
+      //      = 32_500n - 7_500n = 25_000n
+      // Liability = 671_700n + 100_000n - 25_000n = 746_700n
+      // Outcome (absolute) = |2_000_000n - 746_700n| = 1_253_300n, isRefund = true
+      expect(result.estimatedOutcomeCents).toBe(1_253_300n);
       expect(result.isRefund).toBe(true);
     });
 
@@ -322,26 +332,27 @@ describe('estimateTax', () => {
         totalFyWeeks: 52,
       });
       // Liability = 4_356_700n (from bracket test)
-      // Outcome = 3_000_000n - 4_356_700n = -1_356_700n (negative = bill)
-      expect(result.estimatedOutcomeCents).toBe(-1_356_700n);
+      // Outcome (absolute) = |3_000_000n - 4_356_700n| = 1_356_700n, isRefund = false (bill)
+      expect(result.estimatedOutcomeCents).toBe(1_356_700n);
       expect(result.isRefund).toBe(false);
     });
 
     it('returns zero outcome when PAYG equals liability', () => {
+      // Setup: income $20k with LITO $70k, tax = 0. Set PAYG = 0 for zero outcome.
       const result = estimateTax({
         fyGrossCents: 2_000_000n,
-        fyPaygCents: 14_000n, // This value is set to match expected liability
+        fyPaygCents: 0n,
         fyDeductionsCents: 0n,
         weeksElapsed: 52,
         totalFyWeeks: 52,
       });
-      // Tax = (2_000_000n - 1_820_000n) * 1900n / 10000n = 180_000n * 1900n / 10000n = 34_200n
+      // Tax = (2_000_000n - 1_820_000n) * 1900n / 10000n = 34_200n
       // Medicare = 0n (below 26k)
       // LITO = 70_000n
       // Liability = max(0, 34_200 - 70_000) = 0n
-      // Outcome = 14_000n - 0n = 14_000n
-      const outcome = result.estimatedOutcomeCents;
-      expect(typeof outcome).toBe('bigint');
+      // Outcome = |0n - 0n| = 0n, isRefund = true
+      expect(result.estimatedOutcomeCents).toBe(0n);
+      expect(result.isRefund).toBe(true);
     });
   });
 
@@ -371,10 +382,10 @@ describe('estimateTax', () => {
       // Tax = 5_166_700n + (100_000_000n - 18_000_000n) * 4500n / 10000n
       //     = 5_166_700n + 82_000_000n * 4500n / 10000n
       //     = 5_166_700n + 36_900_000n
-      //     = 41_066_700n
+      //     = 42_066_700n
       // Medicare = 100_000_000n * 200n / 10000n = 2_000_000n
       // LITO = 0n
-      // Liability = 41_066_700n + 2_000_000n + 1n = 44_066_700n (integer rounding)
+      // Liability = 42_066_700n + 2_000_000n = 44_066_700n
       expect(result.estimatedTaxLiabilityCents).toBe(44_066_700n);
     });
 

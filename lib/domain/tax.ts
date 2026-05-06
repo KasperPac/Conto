@@ -26,7 +26,7 @@ export interface TaxEstimate {
  * Rates stored as per 10,000 to handle 32.5% bracket with integer arithmetic
  */
 interface TaxBracket {
-  threshold: bigint | null;
+  threshold: bigint;
   ratePer10000: bigint;
   base: bigint;
 }
@@ -42,9 +42,12 @@ const BRACKETS: TaxBracket[] = [
 const MEDICARE_THRESHOLD_CENTS = 2_600_000n; // $26,000
 const MEDICARE_RATE_PER_10000 = 200n; // 2%
 
+// ATO LITO 2025-26: two-phase phaseout
 const LITO_MAX_CENTS = 70_000n; // $700
-const LITO_PHASE_START_CENTS = 3_750_000n; // $37,500
-const LITO_PHASE_END_CENTS = 6_666_700n; // $66,667
+const LITO_PHASE1_START_CENTS = 3_750_000n; // $37,500 — LITO at max
+const LITO_PHASE2_START_CENTS = 4_500_000n; // $45,000 — second kink
+const LITO_PHASE2_BASE_CENTS = 32_500n; // $325 — LITO at $45,000 after phase 1
+const LITO_PHASE_END_CENTS = 6_666_700n; // $66,667 — fully phased out
 
 /**
  * Calculate tax liability for a given taxable income
@@ -75,17 +78,18 @@ function calculateTaxLiability(taxableIncomeCents: bigint): bigint {
       ? (taxableIncomeCents * MEDICARE_RATE_PER_10000) / 10000n
       : 0n;
 
-  // Calculate LITO
+  // Calculate LITO (two-phase phaseout per ATO 2025-26)
   let lito: bigint;
-  if (taxableIncomeCents <= LITO_PHASE_START_CENTS) {
+  if (taxableIncomeCents <= LITO_PHASE1_START_CENTS) {
     lito = LITO_MAX_CENTS;
-  } else if (taxableIncomeCents >= LITO_PHASE_END_CENTS) {
-    lito = 0n;
+  } else if (taxableIncomeCents <= LITO_PHASE2_START_CENTS) {
+    // Phase 1: reduces by 5 cents per dollar (rate = 500n / 10000n)
+    lito = LITO_MAX_CENTS - (taxableIncomeCents - LITO_PHASE1_START_CENTS) * 500n / 10000n;
+  } else if (taxableIncomeCents < LITO_PHASE_END_CENTS) {
+    // Phase 2: reduces by 1.5 cents per dollar (rate = 150n / 10000n)
+    lito = LITO_PHASE2_BASE_CENTS - (taxableIncomeCents - LITO_PHASE2_START_CENTS) * 150n / 10000n;
   } else {
-    // Phase out linearly
-    const phaseRange = LITO_PHASE_END_CENTS - LITO_PHASE_START_CENTS;
-    const incomeIntoPhase = taxableIncomeCents - LITO_PHASE_START_CENTS;
-    lito = LITO_MAX_CENTS - (LITO_MAX_CENTS * incomeIntoPhase) / phaseRange;
+    lito = 0n;
   }
 
   // Tax liability = tax + medicare - LITO, floored at 0
@@ -113,8 +117,10 @@ export function estimateTax(input: TaxEstimateInput): TaxEstimate {
   // Calculate tax liability
   const estimatedTaxLiabilityCents = calculateTaxLiability(clampedTaxableIncome);
 
-  // Calculate outcome: positive = refund, negative = bill
-  const estimatedOutcomeCents = projectedPaygCents - estimatedTaxLiabilityCents;
+  // Calculate outcome: absolute value is always non-negative; isRefund indicates sign
+  const signedOutcomeCents = projectedPaygCents - estimatedTaxLiabilityCents;
+  const estimatedOutcomeCents = signedOutcomeCents < 0n ? -signedOutcomeCents : signedOutcomeCents;
+  const isRefund = signedOutcomeCents >= 0n;
 
   return {
     projectedGrossCents,
@@ -123,6 +129,6 @@ export function estimateTax(input: TaxEstimateInput): TaxEstimate {
     estimatedTaxLiabilityCents,
     projectedPaygCents,
     estimatedOutcomeCents,
-    isRefund: estimatedOutcomeCents >= 0n,
+    isRefund,
   };
 }
