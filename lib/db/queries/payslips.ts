@@ -105,6 +105,48 @@ export async function getPayslipById(userId: string, id: string): Promise<Paysli
   return all.find(p => p.id === id) ?? null;
 }
 
+export async function createPayslipRecord(
+  userId: string,
+  data: {
+    employer: string;
+    periodStart: string;
+    periodEnd: string;
+    payDate: string;
+    grossCents: bigint;
+    taxWithheldCents: bigint;
+    netCents: bigint;
+    superCents: bigint;
+    salarySacrificeCents: bigint;
+    preTaxDeductionsCents: bigint;
+    postTaxDeductionsCents: bigint;
+    sourceObjectKey: string;
+    source: 'pdf';
+  },
+): Promise<string> {
+  return withUser(userId, async (tx) => {
+    const rows = await tx
+      .insert(payslips)
+      .values({
+        userId,
+        employer: data.employer,
+        periodStart: data.periodStart,
+        periodEnd: data.periodEnd,
+        payDate: data.payDate,
+        grossCents: data.grossCents,
+        taxWithheldCents: data.taxWithheldCents,
+        netCents: data.netCents,
+        superCents: data.superCents,
+        salarySacrificeCents: data.salarySacrificeCents,
+        preTaxDeductionsCents: data.preTaxDeductionsCents,
+        postTaxDeductionsCents: data.postTaxDeductionsCents,
+        sourceObjectKey: data.sourceObjectKey,
+        source: data.source,
+      })
+      .returning({ id: payslips.id });
+    return rows[0]!.id;
+  });
+}
+
 export async function getPayslipsForLinkingJob(
   userId: string,
 ): Promise<Array<{ id: string; payDate: string; netCents: Cents; employer: string }>> {

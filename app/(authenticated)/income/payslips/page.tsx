@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/server';
 import { getPayslipsByUser } from '@/lib/db/queries/payslips';
 import { PayslipLinkPanel } from '@/components/payslip-link-panel';
+import { PayslipUploadButton } from '@/components/payslip-upload-button';
 
 function fmt(cents: bigint): string {
   return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(Number(cents) / 100);
@@ -26,7 +27,10 @@ export default async function PayslipsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">Payslips</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Payslips</h1>
+        <PayslipUploadButton />
+      </div>
       {payslips.length === 0 && (
         <p className="text-zinc-500">No payslips yet. Add one via the manual entry form.</p>
       )}
